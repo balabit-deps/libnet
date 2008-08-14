@@ -60,4 +60,4 @@ ip_raw_SOURCES          = ip_raw.c
 ip_link_SOURCES		= ip_link.c
 sebek_SOURCES           = sebek.c
 
-LDADD = $(top_srcdir)/src/libnet.a
+LDADD = $(top_srcdir)/src/libnet.la

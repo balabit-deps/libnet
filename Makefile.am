@@ -12,4 +12,4 @@ SUBDIRS = include src sample
 
 EXTRA_DIST = Makefile.am.common
 
-bin_scripts = libnet-config
+bin_SCRIPTS = libnet-config
