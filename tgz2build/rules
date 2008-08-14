@@ -1,0 +1,59 @@
+#!/usr/local/bin/make -f                                                                                                                                           
+STAMPDIR=tgz2build/stamps
+
+INSTALL=/usr/bin/install
+CONFIGURE_OPTS := --prefix $(ZBS_PREFIX)
+PATCH=
+PATCHES=
+
+ifneq (,$(findstring hpux,$(ZBS_DIST)))
+  CONFIGURE_OPTS += "CFLAGS=-U_XOPEN_SOURCE -U_XOPEN_SOURCE_EXTENDED -D_HPUX_SOURCE"
+  PATCHES="src.diff include.diff"
+  PATCH=/usr/local2/bin/patch
+endif
+
+ifneq (,$(findstring aix,$(ZBS_DIST)))
+  CONFIGURE_OPTS += "CFLAGS=-U_XOPEN_SOURCE -U_XOPEN_SOURCE_EXTENDED -D_HPUX_SOURCE"
+  PATCHES="aix_libnet_headers.diff"
+  PATCH=/usr/local/bin/patch
+endif
+
+
+all: binary
+
+binary: patch setup configure build install
+
+patch: $(STAMPDIR)/patch-stamp
+$(STAMPDIR)/patch-stamp:
+		test -n "$(PATCHES)" && \
+		echo $(PATCHES) | tr ' ' '\n' | while read patch; do \
+			echo "Apply patch: $$patch"; \
+			$(PATCH) -p1 < patch/$$patch; \
+			done || true
+setup:  $(STAMPDIR)/stamp-setup
+$(STAMPDIR)/stamp-setup:
+	mkdir tgz2build/stamps || true
+	touch $@
+
+configure: $(STAMPDIR)/stamp-configure
+	./configure $(CONFIGURE_OPTS) CC="gcc"
+	touch $@
+
+$(STAMPDIR)/stamp-configure: setup
+
+build:  $(STAMPDIR)/stamp-build
+$(STAMPDIR)/stamp-build: configure 
+	$(MAKE) 
+	touch $@
+install: $(STAMPDIR)/stamp-install
+$(STAMPDIR)/stamp-install: build
+	rm -rf $(ZBS_STAGE_DIR) || true
+	$(MAKE) install DESTDIR=$(ZBS_STAGE_DIR)
+	mkdir $(ZBS_STAGE_DIR)/bin
+	/usr/bin/install -c libnet-config $(ZBS_STAGE_DIR)/$(ZBS_PREFIX)/bin/libnet-config
+	touch $@
+clean:
+	rm -rf tgz2build/stamps || true
+	rm -rf tgz2build/staging || true
+	$(MAKE) clean
+	

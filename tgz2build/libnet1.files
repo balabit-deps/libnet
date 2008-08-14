@@ -1,0 +1,2 @@
+opt/syslog-ng/lib/libnet.so*
+opt/syslog-ng/bin/libnet-config
