@@ -251,7 +251,7 @@ libnet_name2addr6(libnet_t *l, char *host_name, u_int8_t use_name)
         return (in6addr_error);
 #endif
 #else
-        if (!(host_ent = gethostbyname2(host_name, AF_INET6)))
+        if (!(host_ent = gethostbyname(host_name)))
 #endif
         {
             snprintf(l->err_buf, LIBNET_ERRBUF_SIZE,
