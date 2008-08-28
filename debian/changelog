@@ -1,4 +1,11 @@
-libnet (1.1.2.1-2) unstable; urgency=low
+libnet (1.1.2.1-2.1.syslogng30) syslogng30; urgency=low
+
+  * portability fixes for HP-UX, AIX.
+  * Packaging for syslog-ng-3.0
+
+ -- Gabor Palasti <pala@balabit.hu>  Thu, 28 Aug 2008 17:34:08 +0200
+
+libnet (1.1.2.1-2) syslogng30; urgency=low
 
   * Fixed bugus checksum of odd sized packets (closes: #284729).
     Patch courtesy of Wu Yongwei.
