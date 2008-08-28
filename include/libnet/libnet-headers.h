@@ -106,12 +106,6 @@
 #define LIBNET_UDP_H            0x08    /**< UDP header:           8 bytes */
 #define LIBNET_VRRP_H           0x08    /**< VRRP header:          8 bytes */
 
-typedef unsigned char u_int8_t;
-typedef unsigned short u_int16_t;
-typedef unsigned int u_int32_t;
-/*typedef unsigned __int64 u_int64_t;  */
-
-
 /**
  * IEEE 802.1Q (Virtual Local Area Network) VLAN header, static header 
  * size: 18 bytes

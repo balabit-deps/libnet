@@ -33,7 +33,7 @@
 #define __LIBNET_TYPES_H
 
 /* Solaris has messed up POSIX nomenclature for these */
-#if (__sun__ && __svr4__)
+#if (__sun__ && __svr4__) || HAVE_HPUX11
 typedef uint8_t  u_int8_t;
 typedef uint16_t u_int16_t;
 typedef uint32_t u_int32_t;
