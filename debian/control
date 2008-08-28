@@ -3,7 +3,7 @@ Section: net
 Priority: optional
 Maintainer: Domenico Andreoli <cavok@debian.org>
 Uploaders: Chris Hanson <cph@debian.org>
-Build-Depends: debhelper (>= 4.0.0), sharutils, libpcap-dev
+Build-Depends: debhelper (>= 4.0.0), sharutils, libpcap0.8-dev
 Standards-Version: 3.6.1
 
 Package: libnet1
