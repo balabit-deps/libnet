@@ -650,6 +650,15 @@ struct libnet_gre_sre_hdr
  *  Internet Protocol, version 4
  *  Static header size: 20 bytes
  */
+#ifdef _AIX
+#undef ip_hl
+#undef ip_v
+#undef ip_tos
+#undef ip_len
+#undef ip_id
+#undef ip_off
+#undef th_win
+#endif
 struct libnet_ipv4_hdr
 {
 #if (LIBNET_LIL_ENDIAN)
