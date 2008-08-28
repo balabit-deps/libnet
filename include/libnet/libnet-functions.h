@@ -1429,7 +1429,7 @@ libnet_t *l, libnet_ptag_t ptag);
  * @param ptag protocol tag to modify an existing header, 0 to build a new one
  * @return protocol tag value on success, -1 on error
  */
-inline u_int32_t
+u_int32_t
 libnet_getgre_length(u_int16_t fv);
 
 /**
