@@ -36,6 +36,9 @@
 #include "Packet32.h"
 #endif
 
+typedef unsigned long int __uint64_t;
+typedef __uint64_t      u_int64_t;
+
 /* port list chain structure */
 typedef struct libnet_port_list_chain libnet_plist_t;
 struct libnet_port_list_chain
