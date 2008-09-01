@@ -21,7 +21,8 @@ dnl Check for the usual programs
 dnl
 AC_PROG_CC
 AC_PROG_INSTALL
-AC_PROG_LIBTOOL
+dnl AC_PROG_LIBTOOL
+LT_INIT
 
 AC_CHECK_HEADERS(sys/sockio.h)
 
