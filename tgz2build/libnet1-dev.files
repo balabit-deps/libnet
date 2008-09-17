@@ -1,5 +1,4 @@
 opt/syslog-ng/bin/libnet-config
-opt/syslog-ng/lib/libnet.a
 opt/syslog-ng/lib/libnet.la
 opt/syslog-ng/lib/libnet.so
 opt/syslog-ng/include
