@@ -25,17 +25,17 @@ $(STAMPDIR)/stamp-setup:
 	touch $@
 
 configure: $(STAMPDIR)/stamp-configure
-$(STAMPDIR)/stamp-configure: setup
-	./configure $(CONFIGURE_OPTS)
+$(STAMPDIR)/stamp-configure: $(STAMPDIR)/stamp-setup
+	bash ./configure $(CONFIGURE_OPTS)
 	touch $@
 
 build:  $(STAMPDIR)/stamp-build
-$(STAMPDIR)/stamp-build: configure 
+$(STAMPDIR)/stamp-build: $(STAMPDIR)/stamp-configure
 	$(MAKE) 
 	touch $@
 
 install: $(STAMPDIR)/stamp-install
-$(STAMPDIR)/stamp-install: build
+$(STAMPDIR)/stamp-install: $(STAMPDIR)/stamp-build
 	rm -rf $(ZBS_STAGE_DIR) || true
 	$(MAKE) install DESTDIR=$(ZBS_STAGE_DIR)
 	mkdir $(ZBS_STAGE_DIR)/bin
