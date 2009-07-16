@@ -1,3 +1,9 @@
+libnet (1.1.2.1-2.2.syslogng30) syslogng30; urgency=low
+
+  * Explicitly use bash to run the configure script
+
+ -- Balazs Scheidler <bazsi@balabit.hu>  Thu, 16 Jul 2009 23:55:06 +0200
+
 libnet (1.1.2.1-2.1.syslogng30) syslogng30; urgency=low
 
   * portability fixes for HP-UX, AIX.
