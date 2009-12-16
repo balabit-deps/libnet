@@ -76,7 +76,7 @@ if test -r /dev/bpf0 && ! (echo "$target_os" | grep  'aix.*' >/dev/null 2>&1); t
 elif test -c /dev/bpf0 && ! (echo "$target_os" | grep  'aix.*' >/dev/null 2>&1); then           # check again in case not readable
    AC_LIBOBJ([libnet_link_bpf])
    AC_MSG_RESULT(found bpf)
-elif test -r /usr/include/net/pfilt.h ; then
+elif test -r /usr/include/net/pfilt.h && ! (echo "$target_os" | grep 'osf5.1.*' >/dev/null 2>&1; then
     AC_LIBOBJ([libnet_link_pf])
     AC_MSG_RESULT(found pf)
 elif test -r /dev/nit ; then
@@ -229,6 +229,10 @@ dnl
      AC_MSG_RESULT(please send diffs to mike@infonexus.com)
      ;;
       
+osf5.1.*)
+     AC_MSG_WARN(preliminary Tru64 5.x support)
+     AC_MSG_RESULT(please send diffs to mike@infonexus.com)
+     ;;
 *)
     AC_MSG_WARN(apparently your OS is not officially supported yet)
     AC_MSG_WARN(this may not work)
