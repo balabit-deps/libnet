@@ -1,3 +1,9 @@
+libnet (1.1.2.1-2.3.syslogng30) syslogngdeps10; urgency=low
+
+  * Tru64 portability support.
+
+ -- Tamas Pal <folti@balabit.com>  Wed, 16 Dec 2009 15:07:55 +0100
+
 libnet (1.1.2.1-2.2.syslogng30) syslogng30; urgency=low
 
   * Explicitly use bash to run the configure script
