@@ -1,3 +1,9 @@
+libnet (1.1.2.1-2.3.syslogng40.1) syslogngdeps20; urgency=low
+
+  * libnet-config script removed from libnet1 package
+
+ -- Tamas Pal <folti@balabit.com>  Tue, 11 Jan 2011 18:21:32 +0100
+
 libnet (1.1.2.1-2.3.syslogng30) syslogngdeps10; urgency=low
 
   * Tru64 portability support.
