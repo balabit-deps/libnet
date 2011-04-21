@@ -14,6 +14,10 @@ ifneq (,$(findstring aix,$(ZBS_DIST)))
   CONFIGURE_OPTS += "CFLAGS=-U_XOPEN_SOURCE -U_XOPEN_SOURCE_EXTENDED"
 endif
 
+ifneq (,$(findstring solaris,$(ZBS_DIST)))
+  LDFLAGS += -Wl,-R/opt/syslog-ng/lib
+endif
+
 
 all: binary
 
@@ -26,7 +30,7 @@ $(STAMPDIR)/stamp-setup:
 
 configure: $(STAMPDIR)/stamp-configure
 $(STAMPDIR)/stamp-configure: $(STAMPDIR)/stamp-setup
-	bash ./configure $(CONFIGURE_OPTS)
+	LDFLAGS="$(LDFLAGS)" bash ./configure $(CONFIGURE_OPTS)
 	touch $@
 
 build:  $(STAMPDIR)/stamp-build
