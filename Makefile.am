@@ -6,6 +6,7 @@
 #
 # Process this file with automake to produce a Makefile.in script.
 
+ACLOCAL_AMFLAGS=-I m4
 include $(top_srcdir)/Makefile.am.common
 
 SUBDIRS = include src sample
