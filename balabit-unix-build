@@ -6,7 +6,8 @@ case "$cmd" in
   build-exclude-list|dist-exclude-list|prepare-dist)
     ;;
   bootstrap)
-    autoreconf --install
+    mkdir -p m4
+    autoreconf --install --force
     ;;
   configure)
     ./configure $@
