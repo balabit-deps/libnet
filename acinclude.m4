@@ -11,7 +11,7 @@ dnl
 dnl usage:      AC_LIBNET_LINUX_PROCFS
 dnl results:    HAVE_LINUX_PROCFS
 dnl
-AC_DEFUN(AC_LIBNET_LINUX_PROCFS,
+AC_DEFUN([AC_LIBNET_LINUX_PROCFS],
     [AC_MSG_CHECKING(for Linux proc filesystem)
     AC_CACHE_VAL(ac_cv_libnet_linux_procfs,
         if test "x`cat /proc/sys/kernel/ostype 2>&-`" = "xLinux" ; then
@@ -37,15 +37,15 @@ dnl
 dnl     HAVE_PACKET_SOCKET (DEFINED)
 dnl
 
-AC_DEFUN(AC_LIBNET_CHECK_PF_PACKET,
+AC_DEFUN([AC_LIBNET_CHECK_PF_PACKET],
 [
     AC_MSG_CHECKING(for packet socket (PF_SOCKET))
-    AC_CACHE_VAL(ac_libnet_have_packet_socket,
+    AC_CACHE_VAL(ac_cv_libnet_have_packet_socket,
 
         [case "$target_os" in
 
         linux)
-                ac_libnet_have_packet_socket = no
+                ac_cv_libnet_have_packet_socket = no
                 ;;
         *)
 
@@ -94,17 +94,17 @@ EOF
 
     # Oopz 4.3 BSD doesn't have this.  Sorry.
     if test ! -x ./pf_packet-test ; then
-        ac_libnet_have_packet_socket=choked
+        ac_cv_libnet_have_packet_socket=choked
     else
-        ac_libnet_have_packet_socket=`./pf_packet-test`;
+        ac_cv_libnet_have_packet_socket=`./pf_packet-test`;
     fi
-    if test $ac_libnet_have_packet_socket = choked; then
+    if test $ac_cv_libnet_have_packet_socket = choked; then
         AC_MSG_RESULT(test program compile choked... assuming no)
-    elif test $ac_libnet_have_packet_socket = yes; then
+    elif test $ac_cv_libnet_have_packet_socket = yes; then
         AC_MSG_RESULT(yes)
-    elif test $ac_libnet_have_packet_socket = probably; then
+    elif test $ac_cv_libnet_have_packet_socket = probably; then
         AC_MSG_RESULT(test program got EPERM... assuming yes)
-    elif test $ac_libnet_have_packet_socket = no; then
+    elif test $ac_cv_libnet_have_packet_socket = no; then
         AC_MSG_RESULT(no)
     fi
 
@@ -112,7 +112,7 @@ EOF
     ;;
     esac])
 
-    if test $ac_libnet_have_packet_socket = yes -o $ac_libnet_have_packet_socket = probably; then
+    if test $ac_cv_libnet_have_packet_socket = yes -o $ac_cv_libnet_have_packet_socket = probably; then
         AC_DEFINE(HAVE_PACKET_SOCKET)
     fi
 ])
@@ -131,7 +131,7 @@ dnl
 dnl
 dnl
 
-AC_DEFUN(AC_LIBNET_CHECK_LIBNET_VER,
+AC_DEFUN([AC_LIBNET_CHECK_LIBNET_VER],
 [
     AC_CHECK_LIB(net, libnet_build_ip, AC_MSG_CHECKING(version) \
 
@@ -166,7 +166,7 @@ dnl
 dnl     HAVE_STRUCT_IP_CSUM (DEFINED)
 dnl
 
-AC_DEFUN(AC_LIBNET_CHECK_IP_CSUM,
+AC_DEFUN([AC_LIBNET_CHECK_IP_CSUM],
 [
     AC_MSG_CHECKING([struct ip contains ip_csum])
     AC_TRY_COMPILE([
@@ -199,7 +199,7 @@ dnl
 dnl     LBL_ALIGN (DEFINED)
 dnl
 
-AC_DEFUN(AC_LBL_UNALIGNED_ACCESS,
+AC_DEFUN([AC_LBL_UNALIGNED_ACCESS],
     [AC_MSG_CHECKING(if unaligned accesses fail)
     AC_CACHE_VAL(ac_cv_lbl_unaligned_fail,
         [case "$target_cpu" in
@@ -278,7 +278,7 @@ dnl     LIBNET_BIG_ENDIAN = 1   or
 dnl     LIBNET_LIL_ENDIAN = 1
 dnl
 
-AC_DEFUN(AC_LIBNET_ENDIAN_CHECK,
+AC_DEFUN([AC_LIBNET_ENDIAN_CHECK],
     [AC_MSG_CHECKING(machine endianess)
 
     cat > conftest.c << EOF
@@ -439,7 +439,7 @@ dnl The check for libresolv is in case you are attempting to link
 dnl statically and happen to have a libresolv.a lying around (and no
 dnl libnsl.a).
 dnl
-AC_DEFUN(AC_LBL_LIBRARY_NET, [
+AC_DEFUN([AC_LBL_LIBRARY_NET], [
     # Most operating systems have gethostbyname() in the default searched
     # libraries (i.e. libc):
     AC_CHECK_FUNC(gethostbyname, ,
