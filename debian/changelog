@@ -1,3 +1,9 @@
+libnet (1.1.2.1-2.3.syslogng50.1) syslogngdeps50; urgency=low
+
+  * Added MinGW support.
+
+ -- Tamas Pal <folti@balabit.com>  Fri, 21 Sep 2012 11:40:01 +0200
+
 libnet (1.1.2.1-2.3.syslogng41.1) syslogngdeps30; urgency=low
 
   * released for syslog-ng-deps-3.0

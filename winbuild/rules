@@ -1,8 +1,10 @@
 #!/usr/local/bin/make -f
-STAMPDIR=tgz2build/stamps
+STAMPDIR=winbuild/stamps
+STAGINGDIR=winbuild/staging
 
+ZBS_STAGE_DIR=$(STAGINGDIR)
 INSTALL:=./install-sh
-CONFIGURE_OPTS := --prefix $(ZBS_PREFIX) --build="$(build)" --enable-shared
+CONFIGURE_OPTS := --prefix $(ZBS_STAGE_DIR) --build="$(build)" --enable-shared
 PATCH=
 PATCHES=
 
@@ -12,7 +14,7 @@ binary: setup configure build install
 
 setup:  $(STAMPDIR)/stamp-setup
 $(STAMPDIR)/stamp-setup:
-	mkdir tgz2build/stamps || true
+	mkdir $(STAMPDIR) || true
 	touch $@
 
 configure: $(STAMPDIR)/stamp-configure
@@ -28,9 +30,10 @@ $(STAMPDIR)/stamp-build: $(STAMPDIR)/stamp-configure
 install: $(STAMPDIR)/stamp-install
 $(STAMPDIR)/stamp-install: $(STAMPDIR)/stamp-build
 	rm -rf $(ZBS_STAGE_DIR) || true
-	$(MAKE) install DESTDIR=$(ZBS_STAGE_DIR)
-	mkdir $(ZBS_STAGE_DIR)/bin
-	$(INSTALL) -c libnet-config $(ZBS_STAGE_DIR)/$(ZBS_PREFIX)/bin/libnet-config
+	$(MAKE) install
+	mkdir -p $(ZBS_STAGE_DIR)/bin
+	$(INSTALL) -c libnet-config $(ZBS_STAGE_DIR)/bin/libnet-config
+	$(INSTALL) -c include/win32/in_systm.h $(ZBS_STAGE_DIR)/include/win32/in_systm.h
 	touch $@
 
 clean:

@@ -73,4 +73,4 @@ libnet_la_LIBADD = @LTLIBOBJS@
 # 
 #   4. If any interfaces have been removed since the last public release,
 #      then set AGE to 0.
-libnet_la_LDFLAGS = -version-info 4:0:3 # CURRENT[:REVISION[:AGE]]
+libnet_la_LDFLAGS = -no-undefined -version-info 4:0:3 # CURRENT[:REVISION[:AGE]]

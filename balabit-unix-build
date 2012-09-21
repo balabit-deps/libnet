@@ -8,6 +8,7 @@ case "$cmd" in
   bootstrap)
     mkdir -p m4
     autoreconf --install --force
+    find -name libtool -o -name ltmain.sh | xargs sed -i -e "s,'file format pe-i386.*\?','file format \(pei\*-i386\(\.\*architecture: i386\)\?|pe-arm-wince|pe-x86-64\)'," -e 's,cmd \/\/c,,'
     ;;
   configure)
     ./configure $@

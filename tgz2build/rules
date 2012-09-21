@@ -1,6 +1,8 @@
 #!/usr/local/bin/make -f
 STAMPDIR=tgz2build/stamps
+STAGINGDIR=-tgz2build/staging
 
+ZBS_STAGE_DIR=$(STAGINGDIR)
 INSTALL:=./install-sh
 CONFIGURE_OPTS := --prefix $(ZBS_PREFIX)
 PATCH=
@@ -25,7 +27,7 @@ binary: setup configure build install
 
 setup:  $(STAMPDIR)/stamp-setup
 $(STAMPDIR)/stamp-setup:
-	mkdir tgz2build/stamps || true
+	mkdir $(STAMPDIR) || true
 	touch $@
 
 configure: $(STAMPDIR)/stamp-configure
