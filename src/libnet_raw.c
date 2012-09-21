@@ -40,7 +40,11 @@
 #endif
 
 #if defined (__WIN32__)
+#if defined(__CYGWIN__)
 int
+#else
+SOCKET
+#endif
 libnet_open_raw4(libnet_t *l)
 {
     return (libnet_open_link(l));

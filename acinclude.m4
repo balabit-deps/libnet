@@ -323,13 +323,11 @@ dnl failed to compile for some reason
         else
             ./conftest > conftest.out
             result=`cat conftest.out`
-            if test $result = "B"; then
-                ac_cv_libnet_endianess=big
-            elif test $result = "L"; then
-                ac_cv_libnet_endianess=lil
-            else
-                ac_cv_libnet_endianess=unknown
-            fi                                
+            case "${result}" in
+               B*) ac_cv_libnet_endianess=big;;
+               L*) ac_cv_libnet_endianess=lil;;
+               *) ac_cv_libnet_endianess=unknown;;
+            esac
         fi
         rm -f conftest* core core.conftest
 
@@ -343,6 +341,8 @@ dnl failed to compile for some reason
             AC_DEFINE(LIBNET_LIL_ENDIAN)
             ENDIANESS="LIBNET_LIL_ENDIAN"
             LIBNET_CONFIG_DEFINES="$LIBNET_CONFIG_DEFINES -DLIBNET_LIL_ENDIAN"
+	else
+	    AC_MSG_ERROR([failed to detect endianness])
         fi
     ])
 

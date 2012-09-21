@@ -38,10 +38,14 @@
 #ifndef _NETINET_IN_SYSTM_H_
 #define _NETINET_IN_SYSTM_H_
 
+#include <stdint.h>
+#include "pcap.h"
+#if 0
 typedef unsigned char  u_int8_t;
 typedef unsigned short u_int16_t;
 typedef unsigned int   u_int32_t;
 typedef unsigned __int64 u_int64_t;
+#endif
 
 typedef __int64 int64_t;
 typedef int64_t rlim_t;

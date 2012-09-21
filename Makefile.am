@@ -9,7 +9,7 @@
 ACLOCAL_AMFLAGS=-I m4
 include $(top_srcdir)/Makefile.am.common
 
-SUBDIRS = include src sample
+SUBDIRS = include src
 
 EXTRA_DIST = Makefile.am.common
 

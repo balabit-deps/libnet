@@ -2,22 +2,9 @@
 STAMPDIR=tgz2build/stamps
 
 INSTALL:=./install-sh
-CONFIGURE_OPTS := --prefix $(ZBS_PREFIX)
+CONFIGURE_OPTS := --prefix $(ZBS_PREFIX) --build="$(build)" --enable-shared
 PATCH=
 PATCHES=
-
-ifneq (,$(findstring hpux,$(ZBS_DIST)))
-  CONFIGURE_OPTS += "CFLAGS=-U_XOPEN_SOURCE -U_XOPEN_SOURCE_EXTENDED -D_HPUX_SOURCE"
-endif
-
-ifneq (,$(findstring aix,$(ZBS_DIST)))
-  CONFIGURE_OPTS += "CFLAGS=-U_XOPEN_SOURCE -U_XOPEN_SOURCE_EXTENDED"
-endif
-
-ifneq (,$(findstring solaris,$(ZBS_DIST)))
-  LDFLAGS += -Wl,-R/opt/syslog-ng/lib
-endif
-
 
 all: binary
 
@@ -30,7 +17,7 @@ $(STAMPDIR)/stamp-setup:
 
 configure: $(STAMPDIR)/stamp-configure
 $(STAMPDIR)/stamp-configure: $(STAMPDIR)/stamp-setup
-	LDFLAGS="$(LDFLAGS)" bash ./configure $(CONFIGURE_OPTS)
+	CFLAGS="$(CFLAGS) -I$(ZBS_PREFIX)/include/pcap -I$(ZBS_PREFIX)/dep/include/pcap" bash ./configure $(CONFIGURE_OPTS)
 	touch $@
 
 build:  $(STAMPDIR)/stamp-build
