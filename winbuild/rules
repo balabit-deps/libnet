@@ -19,7 +19,7 @@ $(STAMPDIR)/stamp-setup:
 
 configure: $(STAMPDIR)/stamp-configure
 $(STAMPDIR)/stamp-configure: $(STAMPDIR)/stamp-setup
-	CFLAGS="$(CFLAGS) -I$(ZBS_PREFIX)/include/pcap -I$(ZBS_PREFIX)/dep/include/pcap" bash ./configure $(CONFIGURE_OPTS)
+	CFLAGS="$(CFLAGS) -I$(ZBS_PREFIX)/include/pcap -I$(ZBS_PREFIX)/dep/include/libpcap" bash ./configure $(CONFIGURE_OPTS)
 	touch $@
 
 build:  $(STAMPDIR)/stamp-build
