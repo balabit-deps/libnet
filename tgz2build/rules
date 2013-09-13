@@ -32,7 +32,7 @@ $(STAMPDIR)/stamp-setup:
 
 configure: $(STAMPDIR)/stamp-configure
 $(STAMPDIR)/stamp-configure: $(STAMPDIR)/stamp-setup
-	LDFLAGS="$(LDFLAGS)" bash ./configure $(CONFIGURE_OPTS)
+	LDFLAGS="$(LDFLAGS)" $(SHELL) ./configure $(CONFIGURE_OPTS)
 	touch $@
 
 build:  $(STAMPDIR)/stamp-build
