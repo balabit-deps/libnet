@@ -1,3 +1,9 @@
+libnet (1.1.2.1-2.3.syslogng52.1) syslogng52; urgency=low
+
+  * release for syslog-ng-5.2
+
+ -- jviktor <jviktor@devel-57>  Tue, 10 Jun 2014 13:13:01 +0200
+
 libnet (1.1.2.1-2.3.syslogng51.1) syslogngdeps51; urgency=low
 
   * release for syslog-ng-5.1
