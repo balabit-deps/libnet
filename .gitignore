@@ -14,5 +14,7 @@ ltmain.sh
 autom4te.cache
 gtk-doc.make
 *~
-b
-smake/*.pyc
+
+sbuild/build
+sbuild/*.pyc
+sbuild.py
