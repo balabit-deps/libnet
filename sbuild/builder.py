@@ -1,6 +1,8 @@
 from BalabitBuilder import BalabitBuilder
+import Utils
 
 def get_builder():
+    Utils.ensure_directory("m4")
     return BalabitBuilder(get_default_config_opts())
 
 def get_default_config_opts():
