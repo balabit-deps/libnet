@@ -1,9 +1,16 @@
 from BalabitBuilder import BalabitBuilder
 import Utils
+import os
+
+class LibnetBuilder(BalabitBuilder):
+
+    def bootstrap(self):
+        Utils.ensure_directory(os.path.join(self.source_dir,"m4"))
+        return super(LibnetBuilder, self).bootstrap()
+       
 
 def get_builder():
-    Utils.ensure_directory("m4")
-    return BalabitBuilder(get_default_config_opts())
+    return LibnetBuilder(get_default_config_opts())
 
 def get_default_config_opts():
     try:
