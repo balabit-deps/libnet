@@ -4,7 +4,6 @@ freebsd-8.0/i386
 freebsd-9.2/amd64
 freebsd-9.2/i386
 freebsd-10.1/amd64
-freebsd-10.1/i386
 hpux-11v2/ia64
 linux-glibc2.11/amd64
 linux-glibc2.11/i386
