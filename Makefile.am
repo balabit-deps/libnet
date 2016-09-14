@@ -11,6 +11,6 @@ include $(top_srcdir)/Makefile.am.common
 
 SUBDIRS = include src
 
-EXTRA_DIST = Makefile.am.common
+EXTRA_DIST = Makefile.am.common sample
 
 bin_SCRIPTS = libnet-config
