@@ -18,3 +18,4 @@ sbuild/*
 !sbuild/config.yml
 sbuild.py
 m4
+!m4/need_this_dir
