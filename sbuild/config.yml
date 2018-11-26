@@ -18,3 +18,4 @@ platforms:
   - solaris-11/sparc64
   - windows-2012/amd64
   - windows-2012/i386
+  - ubuntu-bionic/amd64
