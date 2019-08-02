@@ -1,6 +1,7 @@
 name: libnet
 builder:
   name: BalabitBuilder
+  flags: "out-of-tree-build-incompatible"
 platforms:
   - aix-6.1/powerpc
   - freebsd-9.2/amd64
