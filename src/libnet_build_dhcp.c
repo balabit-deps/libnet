@@ -40,13 +40,13 @@
 #endif
 
 libnet_ptag_t
-libnet_build_dhcpv4(u_int8_t opcode, u_int8_t htype, u_int8_t hlen, 
-u_int8_t hopcount, u_int32_t xid, u_int16_t secs, u_int16_t flags,
-u_int32_t cip, u_int32_t yip, u_int32_t sip, u_int32_t gip, u_int8_t *chaddr,
-u_int8_t *sname, u_int8_t *file, u_int8_t *payload, u_int32_t payload_s,
+libnet_build_dhcpv4(uint8_t opcode, uint8_t htype, uint8_t hlen, 
+uint8_t hopcount, uint32_t xid, uint16_t secs, uint16_t flags,
+uint32_t cip, uint32_t yip, uint32_t sip, uint32_t gip, const uint8_t *chaddr,
+const char *sname, const char *file, const uint8_t *payload, uint32_t payload_s,
 libnet_t *l, libnet_ptag_t ptag)
 {
-    u_int32_t n, h;
+    uint32_t n, h;
     libnet_pblock_t *p; 
     struct libnet_dhcpv4_hdr dhcp_hdr;
 
@@ -82,50 +82,36 @@ libnet_t *l, libnet_ptag_t ptag)
     dhcp_hdr.dhcp_gip       = htonl(gip);
 
     if (chaddr)
-    { 
-        memcpy(dhcp_hdr.dhcp_chaddr, chaddr, sizeof (dhcp_hdr.dhcp_chaddr));
-        dhcp_hdr.dhcp_chaddr[sizeof(dhcp_hdr.dhcp_chaddr) - 1] = 0;
-    }
-    else
     {
-        memset(dhcp_hdr.dhcp_chaddr, 0, sizeof (dhcp_hdr.dhcp_chaddr));
+        size_t n = sizeof (dhcp_hdr.dhcp_chaddr);
+        if (hlen < n)
+            n = hlen;
+        memcpy(dhcp_hdr.dhcp_chaddr, chaddr, n);
     }
- 
     if (sname)
     { 
-        memcpy(dhcp_hdr.dhcp_sname, sname, sizeof (dhcp_hdr.dhcp_sname));
-        dhcp_hdr.dhcp_sname[sizeof(dhcp_hdr.dhcp_sname) - 1] = 0;
+        strncpy(dhcp_hdr.dhcp_sname, sname, sizeof (dhcp_hdr.dhcp_sname) - 1);
     }
-    else
-    {
-        memset(dhcp_hdr.dhcp_sname, 0, sizeof (dhcp_hdr.dhcp_sname));
-    }
-
     if (file)
     {
-        memcpy(dhcp_hdr.dhcp_file, file, sizeof (dhcp_hdr.dhcp_file));
-        dhcp_hdr.dhcp_file[sizeof(dhcp_hdr.dhcp_file) - 1] = 0;
+        strncpy(dhcp_hdr.dhcp_file, file, sizeof (dhcp_hdr.dhcp_file) - 1);
     }
-    else
-    {
-        memset(dhcp_hdr.dhcp_file, 0, sizeof(dhcp_hdr.dhcp_file));
-    }
-    dhcp_hdr.dhcp_magic = htonl(DHCP_MAGIC);    /* should this be tunable? */
+    dhcp_hdr.dhcp_magic = htonl(DHCP_MAGIC);
 
-    n = libnet_pblock_append(l, p, (u_int8_t *)&dhcp_hdr, LIBNET_DHCPV4_H);
+    n = libnet_pblock_append(l, p, (uint8_t *)&dhcp_hdr, LIBNET_DHCPV4_H);
     if (n == -1)
     {
         goto bad;
     }
 
-    if ((payload && !payload_s) || (!payload && payload_s))
+    if (payload_s && !payload)
     {
          snprintf(l->err_buf, LIBNET_ERRBUF_SIZE,
                  "%s(): payload inconsistency\n", __func__);
         goto bad;
     }
  
-    if (payload && payload_s)
+    if (payload_s)
     {
         n = libnet_pblock_append(l, p, payload, payload_s);
         if (n == -1)
@@ -142,10 +128,10 @@ bad:
 }
 
 libnet_ptag_t
-libnet_build_bootpv4(u_int8_t opcode, u_int8_t htype, u_int8_t hlen,
-u_int8_t hopcount, u_int32_t xid, u_int16_t secs, u_int16_t flags,
-u_int32_t cip, u_int32_t yip, u_int32_t sip, u_int32_t gip, u_int8_t *chaddr,
-u_int8_t *sname, u_int8_t *file, u_int8_t *payload, u_int32_t payload_s,
+libnet_build_bootpv4(uint8_t opcode, uint8_t htype, uint8_t hlen,
+uint8_t hopcount, uint32_t xid, uint16_t secs, uint16_t flags,
+uint32_t cip, uint32_t yip, uint32_t sip, uint32_t gip, const uint8_t *chaddr,
+const char *sname, const char *file, const uint8_t *payload, uint32_t payload_s,
 libnet_t *l, libnet_ptag_t ptag)
 {
     return (libnet_build_dhcpv4(opcode, htype, hlen, hopcount, xid, secs,

@@ -1,5 +1,5 @@
 /*
- *  $Id: libnet_build_ipsec.c,v 1.11 2004/01/21 19:01:29 mike Exp $
+ *  $Id: libnet_build_ipsec.c,v 1.12 2004/04/13 17:32:28 mike Exp $
  *
  *  libnet
  *  libnet_build_ipsec.c - IP packet assembler
@@ -42,10 +42,10 @@
 
 
 libnet_ptag_t
-libnet_build_ipsec_esp_hdr(u_int32_t spi, u_int32_t seq, u_int32_t iv,
-u_int8_t *payload, u_int32_t payload_s, libnet_t *l, libnet_ptag_t ptag)
+libnet_build_ipsec_esp_hdr(uint32_t spi, uint32_t seq, uint32_t iv,
+const uint8_t *payload, uint32_t payload_s, libnet_t *l, libnet_ptag_t ptag)
 {
-    u_int32_t n, h;
+    uint32_t n, h;
     libnet_pblock_t *p;
     struct libnet_esp_hdr esp_hdr;
 
@@ -72,27 +72,14 @@ u_int8_t *payload, u_int32_t payload_s, libnet_t *l, libnet_ptag_t ptag)
         return (-1);
     }
 
-    n = libnet_pblock_append(l, p, (u_int8_t *)&esp_hdr, LIBNET_IPSEC_ESP_HDR_H);
+    n = libnet_pblock_append(l, p, (uint8_t *)&esp_hdr, LIBNET_IPSEC_ESP_HDR_H);
     if (n == -1)
     {
         goto bad;
     }
 
-    if ((payload && !payload_s) || (!payload && payload_s))
-    {
-         snprintf(l->err_buf, LIBNET_ERRBUF_SIZE,
-			     "%s(): payload inconsistency\n", __func__);
-        goto bad;
-    }
-
-    if (payload && payload_s)
-    {
-        n = libnet_pblock_append(l, p, payload, payload_s);
-        if (n == -1)
-        {
-            goto bad;
-        }
-    }
+    /* boilerplate payload sanity check / append macro */
+    LIBNET_DO_PAYLOAD(l, p);
 
     return (ptag ? ptag : libnet_pblock_update(l, p, h, 
             LIBNET_PBLOCK_IPSEC_ESP_HDR_H));
@@ -103,12 +90,12 @@ bad:
 
 
 libnet_ptag_t
-libnet_build_ipsec_esp_ftr(u_int8_t len, u_int8_t nh, int8_t *auth,
-            u_int8_t *payload, u_int32_t payload_s, libnet_t *l,
+libnet_build_ipsec_esp_ftr(uint8_t len, uint8_t nh, int8_t *auth,
+            const uint8_t *payload, uint32_t payload_s, libnet_t *l,
             libnet_ptag_t ptag)
 {
     /* XXX we need to know the size of auth */
-    u_int32_t n, h;
+    uint32_t n, h;
     libnet_pblock_t *p;
     struct libnet_esp_ftr esp_ftr;
 
@@ -135,27 +122,14 @@ libnet_build_ipsec_esp_ftr(u_int8_t len, u_int8_t nh, int8_t *auth,
         return (-1);
     }
 
-    n = libnet_pblock_append(l, p, (u_int8_t *)&esp_ftr, LIBNET_IPSEC_ESP_FTR_H);
+    n = libnet_pblock_append(l, p, (uint8_t *)&esp_ftr, LIBNET_IPSEC_ESP_FTR_H);
     if (n == -1)
     {
         goto bad;
     }
 
-    if ((payload && !payload_s) || (!payload && payload_s))
-    {
-         snprintf(l->err_buf, LIBNET_ERRBUF_SIZE,
-			     "%s(): payload inconsistency\n", __func__);
-        goto bad;
-    }
-
-    if (payload && payload_s)
-    {
-        n = libnet_pblock_append(l, p, payload, payload_s);
-        if (n == -1)
-        {
-            goto bad;
-        }
-    }
+    /* boilerplate payload sanity check / append macro */
+    LIBNET_DO_PAYLOAD(l, p);
 
     return (ptag ? ptag : libnet_pblock_update(l, p, h, 
             LIBNET_PBLOCK_IPSEC_ESP_FTR_H));
@@ -166,11 +140,11 @@ bad:
 
 
 libnet_ptag_t
-libnet_build_ipsec_ah(u_int8_t nh, u_int8_t len, u_int16_t res,
-u_int32_t spi, u_int32_t seq, u_int32_t auth, u_int8_t *payload,
-u_int32_t payload_s,  libnet_t *l, libnet_ptag_t ptag)
+libnet_build_ipsec_ah(uint8_t nh, uint8_t len, uint16_t res,
+uint32_t spi, uint32_t seq, uint32_t auth, const uint8_t *payload,
+uint32_t payload_s,  libnet_t *l, libnet_ptag_t ptag)
 {
-    u_int32_t n, h;
+    uint32_t n, h;
     libnet_pblock_t *p;
     struct libnet_ah_hdr ah_hdr;
 
@@ -200,27 +174,14 @@ u_int32_t payload_s,  libnet_t *l, libnet_ptag_t ptag)
     ah_hdr.ah_seq = htonl(seq);        /* AH sequence number */
     ah_hdr.ah_auth = htonl(auth);      /* authentication data */
 
-    n = libnet_pblock_append(l, p, (u_int8_t *)&ah_hdr, LIBNET_IPSEC_AH_H);
+    n = libnet_pblock_append(l, p, (uint8_t *)&ah_hdr, LIBNET_IPSEC_AH_H);
     if (n == -1)
     {
         goto bad;
     }
 
-    if ((payload && !payload_s) || (!payload && payload_s))
-    {
-         snprintf(l->err_buf, LIBNET_ERRBUF_SIZE,
-			     "%s(): payload inconsistency\n", __func__);
-        goto bad;
-    }
-
-    if (payload && payload_s)
-    {
-        n = libnet_pblock_append(l, p, payload, payload_s);
-        if (n == -1)
-        {
-            goto bad;
-        }
-    }
+    /* boilerplate payload sanity check / append macro */
+    LIBNET_DO_PAYLOAD(l, p);
 
     return (ptag ? ptag : libnet_pblock_update(l, p, h, 
             LIBNET_PBLOCK_IPSEC_AH_H));

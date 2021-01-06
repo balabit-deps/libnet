@@ -43,18 +43,20 @@
 #include <sys/sysctl.h>
 #include <net/route.h>
 #include <net/if_dl.h>
+#include <net/if_types.h>
 #include "../include/gnuc.h"
-#include "../include/bpf.h"
+
+#include <bpf.h>
 
 #ifdef HAVE_OS_PROTO_H
 #include "../include/os-proto.h"
 #endif
 
 int
-libnet_bpf_open(int8_t *err_buf)
+libnet_bpf_open(char *err_buf)
 {
     int i, fd;
-    int8_t device[sizeof "/dev/bpf000"];
+    char device[] = "/dev/bpf000";
 
     /*
      *  Go through all the minors and find one that isn't in use.
@@ -95,10 +97,10 @@ libnet_open_link(libnet_t *l)
 {
     struct ifreq ifr;
     struct bpf_version bv;
-    u_int v;
+    uint v;
 
 #if defined(BIOCGHDRCMPLT) && defined(BIOCSHDRCMPLT) && !(__APPLE__)
-    u_int spoof_eth_src = 1;
+    uint spoof_eth_src = 1;
 #endif
 
     if (l == NULL)
@@ -113,7 +115,7 @@ libnet_open_link(libnet_t *l)
         goto bad;
     }
 
-    l->fd = libnet_bpf_open(l->err_buf);
+    l->fd = libnet_bpf_open((char*)l->err_buf);
     if (l->fd == -1)
     {
         goto bad;
@@ -232,7 +234,7 @@ libnet_close_link(libnet_t *l)
 
 
 int
-libnet_write_link(libnet_t *l, u_int8_t *packet, u_int32_t size)
+libnet_write_link(libnet_t *l, const uint8_t *packet, uint32_t size)
 {
     int c;
 
@@ -259,7 +261,8 @@ libnet_get_hwaddr(libnet_t *l)
     int8_t *buf, *next, *end;
     struct if_msghdr *ifm;
     struct sockaddr_dl *sdl;
-    struct libnet_ether_addr *ea = NULL;
+    /* This implementation is not-reentrant. */
+    static struct libnet_ether_addr ea;
 
     mib[0] = CTL_NET;
     mib[1] = AF_ROUTE;
@@ -308,25 +311,22 @@ libnet_get_hwaddr(libnet_t *l)
     for (next = buf ; next < end ; next += ifm->ifm_msglen)
     {
         ifm = (struct if_msghdr *)next;
+        if (ifm->ifm_version != RTM_VERSION)
+            continue;
         if (ifm->ifm_type == RTM_IFINFO)
         {
             sdl = (struct sockaddr_dl *)(ifm + 1);
+            if (sdl->sdl_type != IFT_ETHER)
+                continue;
             if (strncmp(&sdl->sdl_data[0], l->device, sdl->sdl_nlen) == 0)
             {
-                if (!(ea = malloc(sizeof(struct libnet_ether_addr))))
-                {
-                    snprintf(l->err_buf, LIBNET_ERRBUF_SIZE,
-                            "%s(): malloc(): %s", __func__, strerror(errno));
-                    free(buf);
-                    return (NULL);
-                }
-                memcpy(ea->ether_addr_octet, LLADDR(sdl), ETHER_ADDR_LEN);
+                memcpy(ea.ether_addr_octet, LLADDR(sdl), ETHER_ADDR_LEN);
                 break;
             }
         }
     }
     free(buf);
-    return (ea);
+    return (&ea);
 }
 
 

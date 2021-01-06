@@ -1,5 +1,5 @@
 /*
- *  $Id: libnet_pblock.c,v 1.13 2004/03/16 18:40:59 mike Exp $
+ *  $Id: libnet_pblock.c,v 1.14 2004/11/09 07:05:07 mike Exp $
  *
  *  libnet
  *  libnet_pblock.c - Memory protocol block routines.
@@ -38,129 +38,115 @@
 #else
 #include "../include/win32/libnet.h"
 #endif
+#include <assert.h>
 
 libnet_pblock_t *
-libnet_pblock_probe(libnet_t *l, libnet_ptag_t ptag, u_int32_t n, u_int8_t type)
+libnet_pblock_probe(libnet_t *l, libnet_ptag_t ptag, uint32_t b_len, uint8_t type)
 {
     int offset;
     libnet_pblock_t *p;
 
     if (ptag == LIBNET_PTAG_INITIALIZER)
     {
-        /*
-         *  Create a new pblock and enough buffer space for the packet.
-         */
-        p = libnet_pblock_new(l, n);
-        if (p == NULL)
+        return libnet_pblock_new(l, b_len);
+    }
+
+    /*
+     *  Update this pblock, don't create a new one.  Note that if the
+     *  new packet size is larger than the old one we will do a malloc.
+     */
+    p = libnet_pblock_find(l, ptag);
+
+    if (p == NULL)
+    {
+        /* err msg set in libnet_pblock_find() */
+        return (NULL);
+    }
+    if (p->type != type)
+    {
+        snprintf(l->err_buf, LIBNET_ERRBUF_SIZE,
+                "%s(): ptag refers to different type than expected (0x%x != 0x%x)",
+                __func__, p->type, type);
+        return (NULL); 
+    }
+    /*
+     *  If size is greater than the original block of memory, we need 
+     *  to malloc more memory.  Should we use realloc?
+     */
+    if (b_len > p->b_len)
+    {
+        offset = b_len - p->b_len;  /* how many bytes larger new pblock is */
+        free(p->buf);
+        p->buf = malloc(b_len);
+        if (p->buf == NULL)
         {
-            /* err msg set in libnet_pblock_new() */
+            snprintf(l->err_buf, LIBNET_ERRBUF_SIZE,
+                    "%s(): can't resize pblock buffer: %s\n", __func__,
+                    strerror(errno));
             return (NULL);
         }
+        memset(p->buf, 0, b_len);
+        p->h_len += offset; /* new length for checksums */
+        p->b_len = b_len;       /* new buf len */
+        l->total_size += offset;
     }
     else
     {
-        /*
-         *  Update this pblock, don't create a new one.  Note that if the
-         *  new packet size is larger than the old one we will do a malloc.
-         */
-        p = libnet_pblock_find(l, ptag);
-
-        if (p == NULL)
-        {
-            /* err msg set in libnet_pblock_find() */
-            return (NULL);
-        }
-        if (p->type != type)
-        {
-            snprintf(l->err_buf, LIBNET_ERRBUF_SIZE,
-               "%s(): ptag refers to different type than expected (%d != %d)",
-               __func__, p->type, type);
-            return (NULL); 
-        }
-        /*
-         *  If size is greater than the original block of memory, we need 
-         *  to malloc more memory.  Should we use realloc?
-         */
-        if (n > p->b_len)
-        {
-            offset = n - p->b_len;  /* how many bytes larger new pblock is */
-            free(p->buf);
-            p->buf = malloc(n);
-            if (p->buf == NULL)
-            {
-                snprintf(l->err_buf, LIBNET_ERRBUF_SIZE,
-                        "%s(): can't resize pblock buffer: %s\n", __func__,
-                        strerror(errno));
-                return (NULL);
-            }
-            memset(p->buf, 0, n);
-            p->h_len += offset; /* new length for checksums */
-            p->b_len = n;       /* new buf len */
-            l->total_size += offset;
-        }
-        else
-        {
-            offset = p->b_len - n;
-            p->h_len -= offset; /* new length for checksums */
-            p->b_len = n;       /* new buf len */
-            l->total_size -= offset;
-        }
-        p->copied = 0;      /* reset copied counter */
+        offset = p->b_len - b_len;
+        p->h_len -= offset; /* new length for checksums */
+        p->b_len = b_len;       /* new buf len */
+        l->total_size -= offset;
     }
+    p->copied = 0;      /* reset copied counter */
+
     return (p);
 }
 
-libnet_pblock_t *
-libnet_pblock_new(libnet_t *l, u_int32_t size)
+static void* zmalloc(libnet_t* l, uint32_t size, const char* func)
 {
-    libnet_pblock_t *p;
-    /*
-     *  Should we do error checking the size of the pblock here, or
-     *  should we rely on the underlying operating system to complain when
-     *  the user tries to write some ridiculously huge packet?
-     */
+    void* v = malloc(size);
+    if(v)
+        memset(v, 0, size);
+    else
+        snprintf(l->err_buf, LIBNET_ERRBUF_SIZE, "%s(): malloc(): %s\n", func, 
+                strerror(errno));
+    return v;
+}
+
+libnet_pblock_t *
+libnet_pblock_new(libnet_t *l, uint32_t b_len)
+{
+    libnet_pblock_t *p = zmalloc(l, sizeof(libnet_pblock_t), __func__);
+    if(!p)
+        return NULL;
+
+    p->buf = zmalloc(l, b_len, __func__);
+
+    if(!p->buf)
+    {
+        free(p);
+        return NULL;
+    }
+
+    p->b_len = b_len;
+
+    l->total_size += b_len;
+    l->n_pblocks++;
 
     /* make the head node if it doesn't exist */
     if (l->protocol_blocks == NULL)
     {
-        p = l->protocol_blocks = malloc(sizeof (libnet_pblock_t));
-        if (p == NULL)
-        {
-            goto bad;
-        }
-        memset(p, 0, sizeof (libnet_pblock_t));
+        l->protocol_blocks = p;
+        l->pblock_end = p;
     }
     else
     {
-        p = l->pblock_end;
-        p->next = malloc(sizeof (libnet_pblock_t));
-
-        if (p->next == NULL)
-        {
-            goto bad;
-        }
-        memset(p->next, 0, sizeof (libnet_pblock_t));
-        p->next->prev = p;
-        p = p->next;
+        l->pblock_end->next = p;
+        p->prev = l->pblock_end;
+        l->pblock_end = p;
     }
 
-    p->buf = malloc(size);
-    if (p->buf == NULL)
-    {
-        free(p);
-        p = NULL;
-        goto bad;
-    }
-    memset(p->buf, 0, size);
-    p->b_len      = size;
-    l->total_size += size;
-    l->n_pblocks++;
-    return (p);
-
-    bad:
-    snprintf(l->err_buf, LIBNET_ERRBUF_SIZE, "%s(): malloc(): %s\n", __func__, 
-            strerror(errno));
-    return (NULL);
+    return p;
 }
 
 int
@@ -203,6 +189,27 @@ libnet_pblock_swap(libnet_t *l, libnet_ptag_t ptag1, libnet_ptag_t ptag2)
     return (1);
 }
 
+static void libnet_pblock_remove_from_list(libnet_t *l, libnet_pblock_t *p)
+{
+    if (p->prev) 
+    {
+        p->prev->next = p->next;
+    }
+    else
+    {
+        l->protocol_blocks = p->next;
+    }
+
+    if (p->next)
+    {
+        p->next->prev = p->prev;
+    }
+    else
+    {
+        l->pblock_end = p->prev;
+    }
+}
+
 int
 libnet_pblock_insert_before(libnet_t *l, libnet_ptag_t ptag1,
         libnet_ptag_t ptag2)
@@ -217,6 +224,13 @@ libnet_pblock_insert_before(libnet_t *l, libnet_ptag_t ptag1,
         return (-1);
     }
 
+    /* check for already present before */
+    if(p2->next == p1)
+        return 1;
+
+    libnet_pblock_remove_from_list(l, p2);
+
+    /* insert p2 into list */
     p2->prev = p1->prev;
     p2->next = p1;
     p1->prev = p2;
@@ -252,9 +266,15 @@ libnet_pblock_find(libnet_t *l, libnet_ptag_t ptag)
 }
 
 int
-libnet_pblock_append(libnet_t *l, libnet_pblock_t *p, u_int8_t *buf,
-            u_int32_t len)
+libnet_pblock_append(libnet_t *l, libnet_pblock_t *p, const void *buf, uint32_t len)
 {
+    if (len && !buf)
+    {
+        snprintf(l->err_buf, LIBNET_ERRBUF_SIZE,
+			    "%s(): payload inconsistency\n", __func__);
+        return -1;
+    }
+
     if (p->copied + len > p->b_len)
     {
         snprintf(l->err_buf, LIBNET_ERRBUF_SIZE,
@@ -267,29 +287,53 @@ libnet_pblock_append(libnet_t *l, libnet_pblock_t *p, u_int8_t *buf,
 }
 
 void
-libnet_pblock_setflags(libnet_pblock_t *p, u_int8_t flags)
+libnet_pblock_setflags(libnet_pblock_t *p, uint8_t flags)
 {
     p->flags = flags;
 }
 
+/* FIXME both ptag setting and end setting should be done in pblock new and/or pblock probe. */
 libnet_ptag_t
-libnet_pblock_update(libnet_t *l, libnet_pblock_t *p, u_int32_t h,
-u_int8_t type)
+libnet_pblock_update(libnet_t *l, libnet_pblock_t *p, uint32_t h_len, uint8_t type)
 {
     p->type  =  type;
     p->ptag  =  ++(l->ptag_state);
-    p->h_len = h;
+    p->h_len = h_len;
     l->pblock_end = p;              /* point end of pblock list here */
 
     return (p->ptag);
 }
 
-int
-libnet_pblock_coalesce(libnet_t *l, u_int8_t **packet, u_int32_t *size)
+static int pblock_is_ip(libnet_pblock_t* p)
 {
-    libnet_pblock_t *p, *q;
-    u_int32_t c, n;
+    return p->type == LIBNET_PBLOCK_IPV4_H || p->type == LIBNET_PBLOCK_IPV6_H;
+}
 
+/* q is either an ip hdr, or is followed  by an ip hdr. return the offset
+ * from end of packet. if there is no offset, we'll return the total size,
+ * and things will break later
+ */
+static int calculate_ip_offset(libnet_t* l, libnet_pblock_t* q)
+{
+    int ip_offset = 0;
+    libnet_pblock_t* p = l->protocol_blocks;
+    for(; p && p != q; p = p->next) {
+	ip_offset += p->b_len;
+    }
+    assert(p == q); /* if not true, then q is not a pblock! */
+
+    for(; p; p = p->next) {
+	ip_offset += p->b_len;
+	if(pblock_is_ip(p))
+	    break;
+    }
+
+    return ip_offset;
+}
+
+int
+libnet_pblock_coalesce(libnet_t *l, uint8_t **packet, uint32_t *size)
+{
     /*
      *  Determine the offset required to keep memory aligned (strict
      *  architectures like solaris enforce this, but's a good practice
@@ -307,7 +351,13 @@ libnet_pblock_coalesce(libnet_t *l, u_int8_t **packet, u_int32_t *size)
         l->aligner = 0;
     }
 
-    *packet = malloc(l->aligner + l->total_size);
+    if(!l->total_size && !l->aligner) {
+        /* Avoid allocating zero bytes of memory, it perturbs electric fence. */
+        *packet = malloc(1);
+        **packet =1;
+    } else {
+        *packet = malloc(l->aligner + l->total_size);
+    }
     if (*packet == NULL)
     {
         snprintf(l->err_buf, LIBNET_ERRBUF_SIZE, "%s(): malloc(): %s\n",
@@ -339,7 +389,7 @@ libnet_pblock_coalesce(libnet_t *l, u_int8_t **packet, u_int32_t *size)
                     snprintf(l->err_buf, LIBNET_ERRBUF_SIZE, 
                     "%s(): packet assembly cannot find a layer 2 header\n",
                     __func__);
-                    return (-1);
+                    goto err;
                 }
                 break;
             case LIBNET_RAW4:
@@ -348,7 +398,7 @@ libnet_pblock_coalesce(libnet_t *l, u_int8_t **packet, u_int32_t *size)
                     snprintf(l->err_buf, LIBNET_ERRBUF_SIZE, 
                     "%s(): packet assembly cannot find an IPv4 header\n",
                      __func__);
-                    return (-1);
+                    goto err;
                 }
                 break;
             case LIBNET_RAW6:
@@ -357,7 +407,7 @@ libnet_pblock_coalesce(libnet_t *l, u_int8_t **packet, u_int32_t *size)
                     snprintf(l->err_buf, LIBNET_ERRBUF_SIZE, 
                     "%s(): packet assembly cannot find an IPv6 header\n",
                      __func__);
-                    return (-1);
+                    goto err;
                 }
                 break;
             default:
@@ -365,45 +415,114 @@ libnet_pblock_coalesce(libnet_t *l, u_int8_t **packet, u_int32_t *size)
                 snprintf(l->err_buf, LIBNET_ERRBUF_SIZE, 
                 "%s(): suddenly the dungeon collapses -- you die\n",
                  __func__);
-                return (-1);
+                goto err;
             break;
         }
     }
 
-    q = NULL; 
-    for (n = l->aligner + l->total_size, p = l->protocol_blocks; p || q; )
+    /* Build packet from end to start. */
     {
-        if (q)
+        /*
+           From top to bottom, go through pblocks pairwise:
+
+           p   is the currently being copied pblock, and steps through every block
+           q   is the prev pblock to p that needs checksumming, it will
+               not step through every block as p does, it will skip any that do not
+               need checksumming.
+           n   offset from start of packet to beginning of block we are writing
+
+           q is NULL on first iteration
+           p is NULL on last iteration
+
+           Checksums are done on q, to give p a chance to be copied over, since
+           checksumming q can require a lower-level header to be encoded, in the
+           case of IP protocols (which are the only kinds handled by libnet's
+           checksum implementation).
+
+           This is very obscure, or would be much more clear if it was done in
+           two loops.
+           */
+        libnet_pblock_t *q = NULL;
+        libnet_pblock_t *p = NULL;
+        uint32_t n;
+
+        for (n = l->aligner + l->total_size, p = l->protocol_blocks; p || q; )
         {
-            p = p->next;
-        }
-        if (p)
-        {
-            n -= p->b_len;
-            /* copy over the packet chunk */
-            memcpy(*packet + n, p->buf, p->b_len);
-        }
-        if (q)
-        {
-            if (p == NULL || ((p->flags) & LIBNET_PBLOCK_DO_CHECKSUM))
+            if (q)
             {
-                if ((q->flags) & LIBNET_PBLOCK_DO_CHECKSUM)
+                p = p->next;
+            }
+            if (p)
+            {
+                n -= p->b_len;
+                /* copy over the packet chunk */
+                memcpy(*packet + n, p->buf, p->b_len);
+            }
+#if 0
+            printf("-- n %d/%d cksum? %d\n", n, l->aligner + l->total_size,
+                    q &&
+                    (p == NULL || (p->flags & LIBNET_PBLOCK_DO_CHECKSUM)) &&
+                    (q->flags & LIBNET_PBLOCK_DO_CHECKSUM));
+            if(q)
+            {
+                printf(" iph %d/%d offset -%d\n",
+                        (l->total_size + l->aligner) - q->ip_offset,
+                        l->total_size + l->aligner,
+                        q->ip_offset
+                      );
+            }
+            if (p)
+            {
+                printf("p %p ptag %d b_len %d h_len %d cksum? %d type %s\n",
+                        p, p->ptag,
+                        p->b_len, p->h_len,
+                        p->flags & LIBNET_PBLOCK_DO_CHECKSUM,
+                        libnet_diag_dump_pblock_type(p->type)
+                      );
+            }
+            if (q)
+            {
+                printf("q %p ptag %d b_len %d h_len %d cksum? %d type %s\n",
+                        q, q->ptag,
+                        q->b_len, q->h_len,
+                        q->flags & LIBNET_PBLOCK_DO_CHECKSUM,
+                        libnet_diag_dump_pblock_type(q->type)
+                      );
+            }
+#endif
+            if (q)
+            {
+                if (p == NULL || (p->flags & LIBNET_PBLOCK_DO_CHECKSUM))
                 {
-                    int offset = (l->total_size + l->aligner) - q->ip_offset;
-                    c = libnet_do_checksum(l, *packet + offset,
-                            libnet_pblock_p2p(q->type), q->h_len);
-                    if (c == -1)
+                    if (q->flags & LIBNET_PBLOCK_DO_CHECKSUM)
                     {
-                        /* err msg set in libnet_do_checksum() */
-                        return (-1);
+                        uint32_t c;
+                        uint8_t* end = *packet + l->aligner + l->total_size;
+                        uint8_t* beg = *packet + n;
+                        int ip_offset = calculate_ip_offset(l, q);
+                        uint8_t* iph = end - ip_offset;
+#if 0
+			printf("p %d/%s q %d/%s offset calculated %d\n",
+				p ? p->ptag : -1, p ? libnet_diag_dump_pblock_type(p->type) : "nil",
+				q->ptag, libnet_diag_dump_pblock_type(q->type),
+				ip_offset);
+#endif
+                        c = libnet_inet_checksum(l, iph,
+                                libnet_pblock_p2p(q->type), q->h_len,
+                                beg, end);
+                        if (c == -1)
+                        {
+                            /* err msg set in libnet_do_checksum() */
+                            goto err;
+                        }
                     }
+                    q = p;
                 }
+            }
+            else
+            {
                 q = p;
             }
-        }
-        else
-        {
-            q = p;
         }
     }
     *size = l->aligner + l->total_size;
@@ -419,6 +538,11 @@ libnet_pblock_coalesce(libnet_t *l, u_int8_t **packet, u_int32_t *size)
         *size -= l->aligner;
     }
     return (1);
+
+err:
+    free(*packet);
+    *packet = NULL;
+    return (-1);
 }
 
 void
@@ -428,36 +552,21 @@ libnet_pblock_delete(libnet_t *l, libnet_pblock_t *p)
     {
         l->total_size -= p->b_len;
         l->n_pblocks--;
-        if (p->prev) 
-        {
-            p->prev->next = p->next;
-        }
-        else
-        {
-            l->protocol_blocks = p->next;
-        }
 
-        if (p->next)
-        {
-            p->next->prev = p->prev;
-        }
-        else
-        {
-            l->pblock_end = p->prev;
-        }
+        libnet_pblock_remove_from_list(l, p);
 
         if (p->buf)
         {
-          free(p->buf);
+            free(p->buf);
+            p->buf = NULL;
         }
 
         free(p);
-        p = NULL;
     }
 }
 
 int
-libnet_pblock_p2p(u_int8_t type)
+libnet_pblock_p2p(uint8_t type)
 {
     /* for checksum; return the protocol number given a pblock type*/
     switch (type)
@@ -472,10 +581,18 @@ libnet_pblock_p2p(u_int8_t type)
         case LIBNET_PBLOCK_ICMPV4_REDIRECT_H:
         case LIBNET_PBLOCK_ICMPV4_TS_H:
             return (IPPROTO_ICMP);
+        case LIBNET_PBLOCK_ICMPV6_H:
+        case LIBNET_PBLOCK_ICMPV6_ECHO_H:
+        case LIBNET_PBLOCK_ICMPV6_UNREACH_H:
+        case LIBNET_PBLOCK_ICMPV6_NDP_NSOL_H:
+        case LIBNET_PBLOCK_ICMPV6_NDP_NADV_H:
+            return (IPPROTO_ICMPV6);
         case LIBNET_PBLOCK_IGMP_H:
             return (IPPROTO_IGMP);
         case LIBNET_PBLOCK_IPV4_H:
             return (IPPROTO_IP);
+        case LIBNET_PBLOCK_IPV6_H:
+            return (IPPROTO_IPV6);
         case LIBNET_ISL_H:
             return (LIBNET_PROTO_ISL);
         case LIBNET_PBLOCK_OSPF_H:
@@ -496,16 +613,13 @@ libnet_pblock_p2p(u_int8_t type)
 }
 
 void
-libnet_pblock_record_ip_offset(libnet_t *l, u_int32_t offset)
+libnet_pblock_record_ip_offset(libnet_t *l, libnet_pblock_t *p)
 {
-    libnet_pblock_t *p = l->pblock_end;
-
-    do
-    {
-        p->ip_offset = offset;
-        p = p->prev;
-    } while (p && p->type != LIBNET_PBLOCK_IPV4_H);
+    (void) l;
+    (void) p;
+    /* For backwards compatibility, libnet_pblock_t no longer includes
+       an ip_offset, so calling this is unnecessary.
+       */
 }
 
 
-/* EOF */

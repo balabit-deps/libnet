@@ -1,5 +1,5 @@
 /*
- *  $Id: libnet_build_802.3.c,v 1.9 2004/01/28 19:45:00 mike Exp $
+ *  $Id: libnet_build_802.3.c,v 1.10 2004/04/13 17:32:28 mike Exp $
  *
  *  libnet
  *  libnet_build_802_3.c - 802.3 packet assembler
@@ -40,10 +40,10 @@
 #endif
 
 libnet_ptag_t
-libnet_build_802_3(u_int8_t *dst, u_int8_t *src, u_int16_t len, 
-u_int8_t *payload, u_int32_t payload_s, libnet_t *l, libnet_ptag_t ptag)
+libnet_build_802_3(const uint8_t *dst, const uint8_t *src, uint16_t len, 
+const uint8_t *payload, uint32_t payload_s, libnet_t *l, libnet_ptag_t ptag)
 {
-    u_int32_t n, h;
+    uint32_t n, h;
     libnet_pblock_t *p;
     struct libnet_802_3_hdr _802_3_hdr;
 
@@ -70,27 +70,14 @@ u_int8_t *payload, u_int32_t payload_s, libnet_t *l, libnet_ptag_t ptag)
     memcpy(_802_3_hdr._802_3_shost, src, ETHER_ADDR_LEN);  /* src address */
     _802_3_hdr._802_3_len = htons(len);                   /* packet length */
 
-    n = libnet_pblock_append(l, p, (u_int8_t *)&_802_3_hdr, LIBNET_802_3_H);
+    n = libnet_pblock_append(l, p, (uint8_t *)&_802_3_hdr, LIBNET_802_3_H);
     if (n == -1)
     {
         goto bad;
     }
 
-    if ((payload && !payload_s) || (!payload && payload_s))
-    {
-        snprintf(l->err_buf, LIBNET_ERRBUF_SIZE,
-                "%s(): payload inconsistency\n", __func__);
-        goto bad;
-    }
- 
-    if (payload && payload_s)
-    {
-        n = libnet_pblock_append(l, p, payload, payload_s);
-        if (n == -1)
-        {
-            goto bad;
-        }
-    }
+    /* boilerplate payload sanity check / append macro */
+    LIBNET_DO_PAYLOAD(l, p);
  
     return (ptag ? ptag : libnet_pblock_update(l, p, h, LIBNET_PBLOCK_802_3_H));
 bad:

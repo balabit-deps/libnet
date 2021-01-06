@@ -52,7 +52,7 @@ main(int argc, char **argv)
     u_short src_prt = 0;
     libnet_t *l;
     libnet_ptag_t t;
-    u_char *cp;
+    char *cp;
     char errbuf[LIBNET_ERRBUF_SIZE];
     int i, c, packet_amt, burst_int, burst_amt, build_ip;
 	char srcname[100],dstname[100];
@@ -165,7 +165,6 @@ main(int argc, char **argv)
                     0,
                     l,
                     0);
-				//libnet_autobuild_ipv6(LIBNET_TCP_H,IPPROTO_TCP,dst_ip,l);
             }
             printf("%15s/%5d -> %15s/%5d\n", 
                     srcname,

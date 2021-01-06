@@ -1,5 +1,5 @@
 /*
- *  $Id: libnet_write.c,v 1.13 2004/02/20 18:53:50 mike Exp $
+ *  $Id: libnet_write.c,v 1.14 2004/11/09 07:05:07 mike Exp $
  *
  *  libnet
  *  libnet_write.c - writes a prebuilt packet to the network
@@ -32,6 +32,10 @@
  *
  */
 
+#include <netinet/in.h>
+#include <sys/types.h>
+#include <netinet/udp.h>
+
 #if (HAVE_CONFIG_H)
 #include "../include/config.h"
 #endif
@@ -48,8 +52,8 @@ int
 libnet_write(libnet_t *l)
 {
     int c;
-    u_int32_t len;
-    u_int8_t *packet = NULL;
+    uint32_t len;
+    uint8_t *packet = NULL;
 
     if (l == NULL)
     { 
@@ -125,8 +129,8 @@ done:
 
 #if defined (__WIN32__)
 libnet_ptag_t
-libnet_win32_build_fake_ethernet(u_int8_t *dst, u_int8_t *src, u_int16_t type,
-u_int8_t *payload, u_int32_t payload_s, u_int8_t *packet, libnet_t *l,
+libnet_win32_build_fake_ethernet(uint8_t *dst, uint8_t *src, uint16_t type,
+uint8_t *payload, uint32_t payload_s, uint8_t *packet, libnet_t *l,
 libnet_ptag_t ptag)
 {
     struct libnet_ethernet_hdr eth_hdr;
@@ -154,8 +158,8 @@ libnet_ptag_t ptag)
 }
 
 libnet_ptag_t
-libnet_win32_build_fake_token(u_int8_t *dst, u_int8_t *src, u_int16_t type,
-u_int8_t *payload, u_int32_t payload_s, u_int8_t *packet, libnet_t *l,
+libnet_win32_build_fake_token(uint8_t *dst, uint8_t *src, uint16_t type,
+uint8_t *payload, uint32_t payload_s, uint8_t *packet, libnet_t *l,
 libnet_ptag_t ptag)
 {
     struct libnet_token_ring_hdr token_ring_hdr;
@@ -188,15 +192,14 @@ libnet_ptag_t ptag)
     return (1);
 }
 
-
 int
-libnet_win32_write_raw_ipv4(libnet_t *l, u_int8_t *payload, u_int32_t payload_s)
+libnet_win32_write_raw_ipv4(libnet_t *l, const uint8_t *payload, uint32_t payload_s)
 {    
     static BYTE dst[ETHER_ADDR_LEN];
     static BYTE src[ETHER_ADDR_LEN];
 	
-    u_int8_t *packet      = NULL;
-    u_int32_t packet_s;
+    uint8_t *packet      = NULL;
+    uint32_t packet_s;
 
     LPPACKET lpPacket   = NULL;
     DWORD remoteip      = 0;
@@ -208,7 +211,7 @@ libnet_win32_write_raw_ipv4(libnet_t *l, u_int8_t *payload, u_int32_t payload_s)
     memset(src, 0, sizeof(src));
 
     packet_s = payload_s + l->link_offset;
-    packet = (u_int8_t *)malloc(packet_s);
+    packet = (uint8_t *)malloc(packet_s);
     if (packet == NULL)
     {
         snprintf(l->err_buf, LIBNET_ERRBUF_SIZE,
@@ -286,13 +289,13 @@ libnet_win32_write_raw_ipv4(libnet_t *l, u_int8_t *payload, u_int32_t payload_s)
 }
 
 int
-libnet_write_raw_ipv4(libnet_t *l, u_int8_t *packet, u_int32_t size)
+libnet_write_raw_ipv4(libnet_t *l, const uint8_t *packet, uint32_t size)
 {
     return (libnet_win32_write_raw_ipv4(l, packet, size));
 }
 
 int
-libnet_write_raw_ipv6(libnet_t *l, u_int8_t *packet, u_int32_t size)
+libnet_write_raw_ipv6(libnet_t *l, const uint8_t *packet, uint32_t size)
 {
     /* no difference in win32 */
     return (libnet_write_raw_ipv4(l, packet, size));
@@ -301,7 +304,7 @@ libnet_write_raw_ipv6(libnet_t *l, u_int8_t *packet, u_int32_t size)
 #else /* __WIN32__ */
 
 int
-libnet_write_raw_ipv4(libnet_t *l, u_int8_t *packet, u_int32_t size)
+libnet_write_raw_ipv4(libnet_t *l, const uint8_t *packet, uint32_t size)
 {
     int c;
     struct sockaddr_in sin;
@@ -354,7 +357,7 @@ libnet_write_raw_ipv4(libnet_t *l, u_int8_t *packet, u_int32_t size)
 #endif /* __WIN32__ */
 
     c = sendto(l->fd, packet, size, 0, (struct sockaddr *)&sin,
-            sizeof(struct sockaddr));
+            sizeof(sin));
 
 #if (LIBNET_BSD_BYTE_SWAP)
     ip_hdr->ip_len = UNFIX(ip_hdr->ip_len);
@@ -377,7 +380,7 @@ libnet_write_raw_ipv4(libnet_t *l, u_int8_t *packet, u_int32_t size)
 }
 
 int
-libnet_write_raw_ipv6(libnet_t *l, u_int8_t *packet, u_int32_t size)
+libnet_write_raw_ipv6(libnet_t *l, const uint8_t *packet, uint32_t size)
 {
 #if defined HAVE_SOLARIS && !defined HAVE_SOLARIS_IPV6
     snprintf(l->err_buf, LIBNET_ERRBUF_SIZE, "%s(): no IPv6 support\n",

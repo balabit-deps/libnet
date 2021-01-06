@@ -1,5 +1,5 @@
 /*
- *  $Id: libnet_build_mpls.c,v 1.9 2004/03/01 20:26:12 mike Exp $
+ *  $Id: libnet_build_mpls.c,v 1.10 2004/04/13 17:32:28 mike Exp $
  *
  *  libnet
  *  libnet_build_mpls.c - MPLS packet assembler
@@ -40,11 +40,11 @@
 #endif
 
 libnet_ptag_t
-libnet_build_mpls(u_int32_t label, u_int8_t experimental, u_int8_t bos, 
-u_int8_t ttl, u_int8_t *payload, u_int32_t payload_s, libnet_t *l,
+libnet_build_mpls(uint32_t label, uint8_t experimental, uint8_t bos, 
+uint8_t ttl, const uint8_t *payload, uint32_t payload_s, libnet_t *l,
 libnet_ptag_t ptag)
 {
-    u_int32_t n, h;
+    uint32_t n, h;
     libnet_pblock_t *p;
     struct libnet_mpls_hdr mpls_hdr;
 
@@ -72,27 +72,14 @@ libnet_ptag_t ptag)
                               ((bos & 0x01)          <<  8) |
                               ((ttl & 0xff))));
 
-    n = libnet_pblock_append(l, p, (u_int8_t *)&mpls_hdr, LIBNET_MPLS_H);
+    n = libnet_pblock_append(l, p, (uint8_t *)&mpls_hdr, LIBNET_MPLS_H);
     if (n == -1)
     {
         goto bad;
     }
 
-    if ((payload && !payload_s) || (!payload && payload_s))
-    {
-         snprintf(l->err_buf, LIBNET_ERRBUF_SIZE,
-			     "%s(): payload inconsistency\n", __func__);
-        goto bad;
-    }
-
-    if (payload && payload_s)
-    {
-        n = libnet_pblock_append(l, p, payload, payload_s);
-        if (n == -1)
-        {
-            goto bad;
-        }
-    }
+    /* boilerplate payload sanity check / append macro */
+    LIBNET_DO_PAYLOAD(l, p);
 
     /*
      *  The link offset is actually 4 bytes further into the header than

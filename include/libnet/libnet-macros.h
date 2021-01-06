@@ -1,5 +1,5 @@
 /*
- *  $Id: libnet-macros.h,v 1.6 2004/03/01 20:26:12 mike Exp $
+ *  $Id: libnet-macros.h,v 1.7 2004/04/13 17:32:28 mike Exp $
  *
  *  libnet-macros.h - Network routine library macro header file
  *
@@ -33,7 +33,7 @@
 #define __LIBNET_MACROS_H
 /**
  * @file libnet-macros.h
- * @brief libnet macros and symbloc constants
+ * @brief libnet macros and symbolic constants
  */
 
 /* for systems without snprintf */
@@ -130,25 +130,43 @@
 #define UNFIX(n)    (n)
 #endif
 
+/* used internally for packet builders */
+#define LIBNET_DO_PAYLOAD(l, p)                                              \
+if (payload_s && !payload)                                                   \
+{                                                                            \
+    snprintf(l->err_buf, LIBNET_ERRBUF_SIZE,                                 \
+            "%s(): payload inconsistency\n", __func__);                      \
+    goto bad;                                                                \
+}                                                                            \
+if (payload_s)                                                               \
+{                                                                            \
+    n = libnet_pblock_append(l, p, payload, payload_s);                      \
+    if (n == (uint32_t) - 1)                                                 \
+    {                                                                        \
+        goto bad;                                                            \
+    }                                                                        \
+}                                                                            \
+
+
 /* used internally for checksum stuff */
 #define LIBNET_CKSUM_CARRY(x) \
     (x = (x >> 16) + (x & 0xffff), (~(x + (x >> 16)) & 0xffff))
 
 /* used interally for OSPF stuff */
 #define LIBNET_OSPF_AUTHCPY(x, y) \
-    memcpy((u_int8_t *)x, (u_int8_t *)y, sizeof(y))
+    memcpy((uint8_t *)x, (uint8_t *)y, sizeof(y))
 #define LIBNET_OSPF_CKSUMBUF(x, y) \
-    memcpy((u_int8_t *)x, (u_int8_t *)y, sizeof(y))  
+    memcpy((uint8_t *)x, (uint8_t *)y, sizeof(y))  
 
 /* used internally for NTP leap indicator, version, and mode */
 #define LIBNET_NTP_DO_LI_VN_MODE(li, vn, md) \
-    ((u_int8_t)((((li) << 6) & 0xc0) | (((vn) << 3) & 0x38) | ((md) & 0x7)))
+    ((uint8_t)((((li) << 6) & 0xc0) | (((vn) << 3) & 0x38) | ((md) & 0x7)))
 
 /* Not all systems have IFF_LOOPBACK */
 #ifdef IFF_LOOPBACK
 #define LIBNET_ISLOOPBACK(p) ((p)->ifr_flags & IFF_LOOPBACK)
 #else
-#define LIBNET_ISLOOPBACK(p) (strcmp((p)->ifr_name, "lo0") == 0)
+#define LIBNET_ISLOOPBACK(p) (strcmp((p)->ifr_name, "lo") == 0)
 #endif
 
 /* advanced mode check */

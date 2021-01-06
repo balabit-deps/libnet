@@ -1,5 +1,5 @@
 /*
- *  $Id: libnet_build_data.c,v 1.6 2004/01/03 20:31:01 mike Exp $
+ *  $Id: libnet_build_data.c,v 1.7 2004/04/13 17:32:28 mike Exp $
  *
  *  libnet
  *  libnet_build_data.c - generic data block builder
@@ -39,12 +39,12 @@
 #include "../include/win32/libnet.h"
 #endif
 
-
+/* FIXME this won't work with TCP or IPv4 data, which is probably a bug */
 libnet_ptag_t
-libnet_build_data(u_int8_t *payload, u_int32_t payload_s, libnet_t *l,
-            libnet_ptag_t ptag)
+libnet_build_data(const uint8_t *payload, uint32_t payload_s, libnet_t *l,
+libnet_ptag_t ptag)
 {
-    u_int32_t n, h;
+    uint32_t n, h;
     libnet_pblock_t *p;
 
     if (l == NULL)
@@ -65,21 +65,8 @@ libnet_build_data(u_int8_t *payload, u_int32_t payload_s, libnet_t *l,
         return (-1);
     }
 
-    if ((payload && !payload_s) || (!payload && payload_s))
-    {
-         snprintf(l->err_buf, LIBNET_ERRBUF_SIZE,
-			     "%s(): payload inconsistency\n", __func__);
-        goto bad;
-    }
-
-    if (payload && payload_s)
-    {
-        n = libnet_pblock_append(l, p, payload, payload_s);
-        if (n == -1)
-        {
-            goto bad;
-        }
-    }
+    /* boilerplate payload sanity check / append macro */
+    LIBNET_DO_PAYLOAD(l, p);
 
     return (ptag ? ptag : libnet_pblock_update(l, p, h, LIBNET_PBLOCK_DATA_H));
 bad:

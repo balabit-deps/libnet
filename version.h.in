@@ -3,4 +3,5 @@
  *  @configure_input@
  */
 
-#define VERSION "@LIBNET_VERSION@"
+#define VERSION "@PACKAGE_VERSION@"
+

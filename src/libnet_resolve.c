@@ -1,5 +1,5 @@
 /*
- *  $Id: libnet_resolve.c,v 1.20 2004/03/04 20:52:26 kkuehl Exp $
+ *  $Id: libnet_resolve.c,v 1.21 2004/11/09 07:05:07 mike Exp $
  *
  *  libnet
  *  libnet_resolve.c - various name resolution type routines
@@ -39,13 +39,21 @@
 #include "../include/win32/libnet.h"
 #endif
 
+#ifndef HAVE_GETHOSTBYNAME2
+struct hostent *
+gethostbyname2(const char *name, int af)
+{
+        return gethostbyname(name);
+}
+#endif
+
 char *
-libnet_addr2name4(u_int32_t in, u_int8_t use_name)
+libnet_addr2name4(uint32_t in, uint8_t use_name)
 {
 	#define HOSTNAME_SIZE 512
     static char hostname[HOSTNAME_SIZE+1], hostname2[HOSTNAME_SIZE+1];
-    static u_int16_t which;
-    u_int8_t *p;
+    static uint16_t which;
+    uint8_t *p;
 
     struct hostent *host_ent = NULL;
     struct in_addr addr;
@@ -68,7 +76,7 @@ libnet_addr2name4(u_int32_t in, u_int8_t use_name)
     if (!host_ent)
     {
 
-        p = (u_int8_t *)&in;
+        p = (uint8_t *)&in;
    		snprintf(((which % 2) ? hostname : hostname2), HOSTNAME_SIZE,
                  "%d.%d.%d.%d",
                  (p[0] & 255), (p[1] & 255), (p[2] & 255), (p[3] & 255));
@@ -84,10 +92,10 @@ libnet_addr2name4(u_int32_t in, u_int8_t use_name)
 }
 
 void
-libnet_addr2name4_r(u_int32_t in, u_int8_t use_name, char *hostname,
+libnet_addr2name4_r(uint32_t in, uint8_t use_name, char *hostname,
         int hostname_len)
 {
-    u_int8_t *p;
+    uint8_t *p;
     struct hostent *host_ent = NULL;
     struct in_addr addr;
 
@@ -99,7 +107,7 @@ libnet_addr2name4_r(u_int32_t in, u_int8_t use_name, char *hostname,
     }
     if (!host_ent)
     {
-        p = (u_int8_t *)&in;
+        p = (uint8_t *)&in;
         snprintf(hostname, hostname_len, "%d.%d.%d.%d",
                 (p[0] & 255), (p[1] & 255), (p[2] & 255), (p[3] & 255));
     }
@@ -110,13 +118,13 @@ libnet_addr2name4_r(u_int32_t in, u_int8_t use_name, char *hostname,
     }
 }
 
-u_int32_t
-libnet_name2addr4(libnet_t *l, char *host_name, u_int8_t use_name)
+uint32_t
+libnet_name2addr4(libnet_t *l, char *host_name, uint8_t use_name)
 {
     struct in_addr addr;
     struct hostent *host_ent; 
-    u_int32_t m;
-    u_int val;
+    uint32_t m;
+    uint val;
     int i;
 
     if (use_name == LIBNET_RESOLVE)
@@ -126,7 +134,7 @@ libnet_name2addr4(libnet_t *l, char *host_name, u_int8_t use_name)
             if (!(host_ent = gethostbyname(host_name)))
             {
                 snprintf(l->err_buf, LIBNET_ERRBUF_SIZE,
-                        "%s(): %s\n", __func__, strerror(errno));
+                        "%s(): %s\n", __func__, hstrerror(h_errno));
                 /* XXX - this is actually 255.255.255.255 */
                 return (-1);
             }
@@ -187,7 +195,7 @@ libnet_name2addr4(libnet_t *l, char *host_name, u_int8_t use_name)
 }
 
 void
-libnet_addr2name6_r(struct libnet_in6_addr addr, u_int8_t use_name,
+libnet_addr2name6_r(struct libnet_in6_addr addr, uint8_t use_name,
             char *host_name, int host_name_len)
 {
     struct hostent *host_ent = NULL;
@@ -222,8 +230,14 @@ libnet_addr2name6_r(struct libnet_in6_addr addr, u_int8_t use_name,
 
 const struct libnet_in6_addr in6addr_error = IN6ADDR_ERROR_INIT;
 
+int
+libnet_in6_is_error(struct libnet_in6_addr addr)
+{
+    return 0 == memcmp(&addr, &in6addr_error, sizeof(addr));
+}
+
 struct libnet_in6_addr
-libnet_name2addr6(libnet_t *l, char *host_name, u_int8_t use_name)
+libnet_name2addr6(libnet_t *l, const char *host_name, uint8_t use_name)
 {
 #if !defined (__WIN32__)
     struct libnet_in6_addr addr;
@@ -251,7 +265,7 @@ libnet_name2addr6(libnet_t *l, char *host_name, u_int8_t use_name)
         return (in6addr_error);
 #endif
 #else
-        if (!(host_ent = gethostbyname(host_name)))
+        if (!(host_ent = gethostbyname2(host_name, AF_INET6)))
 #endif
         {
             snprintf(l->err_buf, LIBNET_ERRBUF_SIZE,
@@ -264,14 +278,14 @@ libnet_name2addr6(libnet_t *l, char *host_name, u_int8_t use_name)
     }
     else
     {
-		#if defined(__WIN32__) /* Silence Win32 warning */
-		if (l)
+#if defined(__WIN32__) /* Silence Win32 warning */
+        if (l)
         {        
                snprintf(l->err_buf, LIBNET_ERRBUF_SIZE,
                 "%s(): can't resolve IPv6 addresses.\n", __func__);
         }
         return (in6addr_error);
-        #else
+#else
         if(!inet_pton(AF_INET6, host_name, &addr))
         {
             if (l)
@@ -282,10 +296,57 @@ libnet_name2addr6(libnet_t *l, char *host_name, u_int8_t use_name)
             return (in6addr_error);
         }
         return (addr);
-        #endif
+#endif
     }
 }
 
+#ifdef HAVE_GETIFADDRS
+
+#include <ifaddrs.h>
+
+struct libnet_in6_addr
+libnet_get_ipaddr6(libnet_t *l)
+{
+    struct ifaddrs *ifaddr, *p;
+    struct libnet_in6_addr addr;
+
+    if (l == NULL)
+    {
+        return (in6addr_error);
+    }
+
+    if (getifaddrs(&ifaddr) != 0)
+    {
+        snprintf(l->err_buf, LIBNET_ERRBUF_SIZE,
+                "%s(): getifaddrs(): %s\n", __func__, strerror(errno));
+        return (in6addr_error);
+    }
+
+    if (l->device == NULL)
+    {
+        if (libnet_select_device(l) == -1)
+        {
+            /* error msg set in libnet_select_device() */
+            return (in6addr_error);
+        }
+    }
+
+    for (p = ifaddr; p != NULL; p = p->ifa_next)
+    {
+        if ((strcmp(p->ifa_name, l->device) == 0) && (p->ifa_addr != NULL) &&
+                (p->ifa_addr->sa_family == AF_INET6))
+        {
+            memcpy(&addr.__u6_addr,
+                    ((struct sockaddr_in6*)p->ifa_addr)->sin6_addr.s6_addr, 16);
+            freeifaddrs(ifaddr);
+            return (addr);
+        }
+    }
+
+    freeifaddrs(ifaddr);
+    return (in6addr_error);
+}
+#else
 struct libnet_in6_addr
 libnet_get_ipaddr6(libnet_t *l)
 {
@@ -293,9 +354,10 @@ libnet_get_ipaddr6(libnet_t *l)
            "%s(): not yet Implemented\n", __func__);
     return (in6addr_error);
 }
+#endif /* WIN32 */
 
 #if !defined(__WIN32__)
-u_int32_t
+uint32_t
 libnet_get_ipaddr4(libnet_t *l)
 {
     struct ifreq ifr;
@@ -344,7 +406,7 @@ libnet_get_ipaddr4(libnet_t *l)
 }
 #else
 #include <Packet32.h>
-u_int32_t
+uint32_t
 libnet_get_ipaddr4(libnet_t *l)
 {
     long npflen = 0;
@@ -363,13 +425,13 @@ libnet_get_ipaddr4(libnet_t *l)
 }
 #endif /* WIN32 */
 
-u_int8_t *
-libnet_hex_aton(int8_t *s, int *len)
+uint8_t *
+libnet_hex_aton(const char *s, int *len)
 {
-    u_int8_t *buf;
+    uint8_t *buf;
     int i;
     int32_t l;
-    int8_t *pp;
+    char *pp;
         
     while (isspace(*s))
     {
@@ -390,7 +452,7 @@ libnet_hex_aton(int8_t *s, int *len)
     /* expect len hex octets separated by ':' */
     for (i = 0; i < *len + 1; i++)
     {
-        l = strtol(s, (char **)&pp, 16);
+        l = strtol(s, &pp, 16);
         if (pp == s || l > 0xff || l < 0)
         {
             *len = 0;
@@ -403,7 +465,7 @@ libnet_hex_aton(int8_t *s, int *len)
             free(buf);
             return (NULL);
         }
-        buf[i] = (u_int8_t)l;
+        buf[i] = (uint8_t)l;
         s = pp + 1;
     }
     /* return int8_tacter after the octets ala strtol(3) */

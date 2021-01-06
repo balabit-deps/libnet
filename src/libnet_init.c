@@ -40,18 +40,11 @@
 #endif
 
 libnet_t *
-libnet_init(int injection_type, char *device, char *err_buf)
+libnet_init(int injection_type, const char *device, char *err_buf)
 {
     libnet_t *l = NULL;
 
-#if !defined(__WIN32__)
-    if (getuid() && geteuid())
-    {
-        snprintf(err_buf, LIBNET_ERRBUF_SIZE,
-                "%s(): UID or EUID of 0 required\n", __func__);
-        goto bad;
-    }
-#else
+#if defined(__WIN32__)
     WSADATA wsaData;
 
     if ((WSAStartup(0x0202, &wsaData)) != 0)
@@ -75,22 +68,25 @@ libnet_init(int injection_type, char *device, char *err_buf)
     l->injection_type   = injection_type;
     l->ptag_state       = LIBNET_PTAG_INITIALIZER;
     l->device           = (device ? strdup(device) : NULL);
+    l->fd               = -1;
 
     strncpy(l->label, LIBNET_LABEL_DEFAULT, LIBNET_LABEL_SIZE);
-    l->label[sizeof(l->label)] = '\0';
+    l->label[LIBNET_LABEL_SIZE - 1] = '\0';
 
     switch (l->injection_type)
     {
+        case LIBNET_NONE:
+            break;
         case LIBNET_LINK:
         case LIBNET_LINK_ADV:
             if (libnet_select_device(l) == -1)
             {
-                snprintf(err_buf, LIBNET_ERRBUF_SIZE, l->err_buf);
+                snprintf(err_buf, LIBNET_ERRBUF_SIZE, "%s", l->err_buf);
 		goto bad;
             }
             if (libnet_open_link(l) == -1)
             {
-                snprintf(err_buf, LIBNET_ERRBUF_SIZE, l->err_buf);
+                snprintf(err_buf, LIBNET_ERRBUF_SIZE, "%s", l->err_buf);
                 goto bad;
             }
             break;
@@ -98,7 +94,7 @@ libnet_init(int injection_type, char *device, char *err_buf)
         case LIBNET_RAW4_ADV:
             if (libnet_open_raw4(l) == -1)
             {
-                snprintf(err_buf, LIBNET_ERRBUF_SIZE, l->err_buf);
+                snprintf(err_buf, LIBNET_ERRBUF_SIZE, "%s", l->err_buf);
                 goto bad;
             }
             break;
@@ -106,7 +102,7 @@ libnet_init(int injection_type, char *device, char *err_buf)
         case LIBNET_RAW6_ADV:
             if (libnet_open_raw6(l) == -1)
             {
-                snprintf(err_buf, LIBNET_ERRBUF_SIZE, l->err_buf);
+                snprintf(err_buf, LIBNET_ERRBUF_SIZE, "%s", l->err_buf);
                 goto bad;
             }
             break;
@@ -133,10 +129,7 @@ libnet_destroy(libnet_t *l)
     if (l)
     {
         close(l->fd);
-        if (l->device)
-        {
-            free(l->device);
-        }
+        free(l->device);
         libnet_clear_packet(l);
         free(l);
     }
@@ -146,26 +139,19 @@ void
 libnet_clear_packet(libnet_t *l)
 {
     libnet_pblock_t *p;
-    libnet_pblock_t *next;
 
-    if (l)
+    if (!l)
     {
-        p = l->protocol_blocks;
-        if (p)
-        {
-            for (; p; p = next)
-            {
-                next = p->next;
-                if (p->buf)
-                {
-                    free(p->buf);
-                }
-                free(p);
-            }
-        }
-        l->protocol_blocks = NULL;
-        l->total_size = 0;
+        return;
     }
+
+    while((p = l->protocol_blocks))
+    {
+        libnet_pblock_delete(l, p);
+    }
+
+    /* All pblocks are deleted, so start the tag count over from 1. */
+    l->ptag_state = 0;
 }
 
 void
@@ -192,7 +178,7 @@ libnet_getfd(libnet_t *l)
     return (l->fd);
 }
 
-int8_t *
+const char *
 libnet_getdevice(libnet_t *l)
 {
     if (l == NULL)
@@ -203,7 +189,7 @@ libnet_getdevice(libnet_t *l)
     return (l->device);
 }
 
-u_int8_t *
+uint8_t *
 libnet_getpbuf(libnet_t *l, libnet_ptag_t ptag)
 {
     libnet_pblock_t *p;
@@ -225,7 +211,7 @@ libnet_getpbuf(libnet_t *l, libnet_ptag_t ptag)
     }
 }
 
-u_int32_t
+uint32_t
 libnet_getpbuf_size(libnet_t *l, libnet_ptag_t ptag)
 {
     libnet_pblock_t *p;
@@ -247,11 +233,12 @@ libnet_getpbuf_size(libnet_t *l, libnet_ptag_t ptag)
     }
 }
 
-u_int32_t
+uint32_t
 libnet_getpacket_size(libnet_t *l)
 {
+    /* Why doesn't this return l->total_size? */
     libnet_pblock_t *p;
-    u_int32_t n;
+    uint32_t n;
 
     if (l == NULL)
     { 

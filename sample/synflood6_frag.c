@@ -52,11 +52,11 @@ main(int argc, char **argv)
     u_short src_prt = 0;
     libnet_t *l;
     libnet_ptag_t tcp, ip, ip_frag;
-    u_char *cp;
+    char *cp;
     char errbuf[LIBNET_ERRBUF_SIZE];
     int i, j, c, packet_amt, burst_int, burst_amt;
     char srcname[100], dstname[100];
-    u_int8_t payload[56];
+    uint8_t payload[56];
 
     packet_amt  = 0;
     burst_int   = 0;

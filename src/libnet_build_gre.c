@@ -107,9 +107,9 @@
  *         +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
  *      
  */
-
-static  void
-__libnet_print_gre_flags_ver(u_int16_t fv)
+#if 0
+static void
+__libnet_print_gre_flags_ver(uint16_t fv)
 {
     printf("version = %d (%d) -> ",
         fv & GRE_VERSION_MASK, libnet_getgre_length(fv));
@@ -135,14 +135,14 @@ __libnet_print_gre_flags_ver(u_int16_t fv)
     }
     printf("\n");
 }
-
+#endif
 
 /* FIXME: what is the portability of the "((struct libnet_gre_hdr*)0)->" ? */
-u_int32_t
-libnet_getgre_length(u_int16_t fv)
+uint32_t
+libnet_getgre_length(uint16_t fv)
 {
 
-    u_int32_t n = LIBNET_GRE_H;
+    uint32_t n = LIBNET_GRE_H;
     /*
      * If either the Checksum Present bit or the Routing Present bit are
      * set, BOTH the Checksum and Offset fields are present in the GRE
@@ -172,11 +172,11 @@ libnet_getgre_length(u_int16_t fv)
 }
 
 libnet_ptag_t
-libnet_build_gre(u_int16_t fv, u_int16_t type, u_int16_t sum, 
-u_int16_t offset, u_int32_t key, u_int32_t seq, u_int16_t len,
-u_int8_t *payload, u_int32_t payload_s, libnet_t *l, libnet_ptag_t ptag)
+libnet_build_gre(uint16_t fv, uint16_t type, uint16_t sum, 
+uint16_t offset, uint32_t key, uint32_t seq, uint16_t len,
+const uint8_t *payload, uint32_t payload_s, libnet_t *l, libnet_ptag_t ptag)
 {
-    u_int32_t n;
+    uint32_t n;
     libnet_pblock_t *p;
     struct libnet_gre_hdr gre_hdr;
 
@@ -199,7 +199,7 @@ u_int8_t *payload, u_int32_t payload_s, libnet_t *l, libnet_ptag_t ptag)
 
     gre_hdr.flags_ver = htons(fv);
     gre_hdr.type      = htons(type);
-    n = libnet_pblock_append(l, p, (u_int8_t *)&gre_hdr, LIBNET_GRE_H);
+    n = libnet_pblock_append(l, p, (uint8_t *)&gre_hdr, LIBNET_GRE_H);
     if (n == -1)
     {
         /* err msg set in libnet_pblock_append() */
@@ -210,7 +210,7 @@ u_int8_t *payload, u_int32_t payload_s, libnet_t *l, libnet_ptag_t ptag)
 	(fv & GRE_VERSION_MASK))                                       /* v1 */
     {
         sum = htons(sum);
-        n = libnet_pblock_append(l, p, (u_int8_t*)&sum,
+        n = libnet_pblock_append(l, p, (uint8_t*)&sum,
                 sizeof(gre_hdr.gre_sum));
 	if (n == -1)
 	{
@@ -218,7 +218,7 @@ u_int8_t *payload, u_int32_t payload_s, libnet_t *l, libnet_ptag_t ptag)
 	    goto bad;
 	}
 	offset = htons(offset);
-	n = libnet_pblock_append(l, p, (u_int8_t*)&offset, 
+	n = libnet_pblock_append(l, p, (uint8_t*)&offset, 
                 sizeof(gre_hdr.gre_offset));
 	if (n == -1)
 	{
@@ -231,7 +231,7 @@ u_int8_t *payload, u_int32_t payload_s, libnet_t *l, libnet_ptag_t ptag)
 	( (fv & GRE_VERSION_MASK) && (fv & GRE_SEQ)) )                 /* v1 */
     {
 	key = htonl(key);
-	n = libnet_pblock_append(l, p, (u_int8_t*)&key,
+	n = libnet_pblock_append(l, p, (uint8_t*)&key,
                 sizeof(gre_hdr.gre_key));
 	if (n == -1)
 	{
@@ -244,7 +244,7 @@ u_int8_t *payload, u_int32_t payload_s, libnet_t *l, libnet_ptag_t ptag)
 	( (fv & GRE_VERSION_MASK) && (fv & GRE_ACK)) )                 /* v1 */
     {
 	seq = htonl(seq);
-	n = libnet_pblock_append(l, p, (u_int8_t*)&seq, 
+	n = libnet_pblock_append(l, p, (uint8_t*)&seq, 
                 sizeof(gre_hdr.gre_seq));
 	if (n == -1)
 	{
@@ -253,21 +253,8 @@ u_int8_t *payload, u_int32_t payload_s, libnet_t *l, libnet_ptag_t ptag)
 	}
     }
 
-    if ((payload && !payload_s) || (!payload && payload_s))
-    {
-        sprintf(l->err_buf, "%s(): payload inconsistency\n", __func__);
-        goto bad;
-    }
-
-    if (payload && payload_s)
-    {
-        n = libnet_pblock_append(l, p, payload, payload_s);
-        if (n == -1)
-        {
-            /* err msg set in libnet_pblock_append() */
-            goto bad;
-        }
-    }
+    /* boilerplate payload sanity check / append macro */
+    LIBNET_DO_PAYLOAD(l, p);
 
     if ( (fv & GRE_CSUM) && (!sum) )
     {
@@ -282,9 +269,9 @@ bad:
 }
 
 libnet_ptag_t
-libnet_build_egre(u_int16_t fv, u_int16_t type, u_int16_t sum, 
-u_int16_t offset, u_int32_t key, u_int32_t seq, u_int16_t len,
-u_int8_t *payload, u_int32_t payload_s, libnet_t *l, libnet_ptag_t ptag)
+libnet_build_egre(uint16_t fv, uint16_t type, uint16_t sum, 
+uint16_t offset, uint32_t key, uint32_t seq, uint16_t len,
+const uint8_t *payload, uint32_t payload_s, libnet_t *l, libnet_ptag_t ptag)
 {
     return (libnet_build_gre(fv, type, sum, offset, key, seq, len, 
            payload, payload_s, l, ptag));
@@ -309,11 +296,11 @@ u_int8_t *payload, u_int32_t payload_s, libnet_t *l, libnet_ptag_t ptag)
  *
  */
 libnet_ptag_t
-libnet_build_gre_sre(u_int16_t af, u_int8_t offset, u_int8_t length, 
-u_int8_t *routing, u_int8_t *payload, u_int32_t payload_s, libnet_t *l,
+libnet_build_gre_sre(uint16_t af, uint8_t offset, uint8_t length, 
+uint8_t *routing, const uint8_t *payload, uint32_t payload_s, libnet_t *l,
 libnet_ptag_t ptag)
 {
-    u_int32_t n;
+    uint32_t n;
     libnet_pblock_t *p;
     struct libnet_gre_sre_hdr sre_hdr;
 
@@ -336,7 +323,7 @@ libnet_ptag_t ptag)
     sre_hdr.af = htons(af);
     sre_hdr.sre_offset = offset;
     sre_hdr.sre_length = length;
-    n = libnet_pblock_append(l, p, (u_int8_t *)&sre_hdr, LIBNET_GRE_SRE_H);
+    n = libnet_pblock_append(l, p, (uint8_t *)&sre_hdr, LIBNET_GRE_SRE_H);
     if (n == -1)
     {
         /* err msg set in libnet_pblock_append() */
@@ -359,21 +346,8 @@ libnet_ptag_t ptag)
         }
     }
 
-    if ((payload && !payload_s) || (!payload && payload_s))
-    {
-        sprintf(l->err_buf, "%s(): payload inconsistency\n", __func__);
-        goto bad;
-    }
-
-    if (payload && payload_s)
-    {
-        n = libnet_pblock_append(l, p, payload, payload_s);
-        if (n == -1)
-        {
-            /* err msg set in libnet_pblock_append() */
-            goto bad;
-        }
-    }
+    /* boilerplate payload sanity check / append macro */
+    LIBNET_DO_PAYLOAD(l, p);
 
     return (ptag ? ptag : libnet_pblock_update(l, p, 0, 
            LIBNET_PBLOCK_GRE_SRE_H));
@@ -387,7 +361,7 @@ bad:
 libnet_ptag_t
 libnet_build_gre_last_sre(libnet_t *l, libnet_ptag_t ptag)
 {
-    u_int32_t n, zero = 0;
+    uint32_t n, zero = 0;
     libnet_pblock_t *p;
 
     if (l == NULL)
@@ -407,7 +381,7 @@ libnet_build_gre_last_sre(libnet_t *l, libnet_ptag_t ptag)
         return (-1);
     }
 
-    n = libnet_pblock_append(l, p, (u_int8_t *)&zero, LIBNET_GRE_SRE_H);
+    n = libnet_pblock_append(l, p, (uint8_t *)&zero, LIBNET_GRE_SRE_H);
     if (n == -1)
     {
         /* err msg set in libnet_pblock_append() */
@@ -422,6 +396,4 @@ bad:
     return (-1);
 
 }
-
-
 /* EOF */
