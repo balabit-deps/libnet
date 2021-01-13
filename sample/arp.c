@@ -1,5 +1,5 @@
 /*
- *  $Id: arp.c,v 1.6 2004/03/01 20:26:12 mike Exp $
+ *  $Id: arp.c,v 1.7 2004/11/09 07:05:07 mike Exp $
  *
  *  libnet 1.1
  *  Build an ARP packet
@@ -43,12 +43,12 @@ int
 main(int argc, char *argv[])
 {
     int c;
-    u_int32_t i;
+    uint32_t i;
     libnet_t *l;
     libnet_ptag_t t;
     char *device = NULL;
-    u_int8_t *packet;
-    u_int32_t packet_s;
+    uint8_t *packet;
+    uint32_t packet_s;
     char errbuf[LIBNET_ERRBUF_SIZE];
 
     printf("libnet 1.1 packet shaping: ARP[link -- autobuilding ethernet]\n"); 
@@ -70,21 +70,6 @@ main(int argc, char *argv[])
     }
 	else
 
-    /*
-     *  Build the packet, remmebering that order IS important.  We must
-     *  build the packet from lowest protocol type on up as it would
-     *  appear on the wire.  So for our ARP packet:
-     *
-     *  -------------------------------------------
-     *  |  Ethernet   |           ARP             |
-     *  -------------------------------------------
-     *         ^                     ^
-     *         |------------------   |
-     *  libnet_build_ethernet()--|   |
-     *                               |
-     *  libnet_build_arp()-----------|
-     */
-	 
     i = libnet_get_ipaddr4(l);
   
     t = libnet_build_arp(
@@ -94,9 +79,9 @@ main(int argc, char *argv[])
             4,                                      /* protocol addr size */
             ARPOP_REPLY,                            /* operation type */
             enet_src,                               /* sender hardware addr */
-            (u_int8_t *)&i,                         /* sender protocol addr */
+            (uint8_t *)&i,                         /* sender protocol addr */
             enet_dst,                               /* target hardware addr */
-            (u_int8_t *)&i,                         /* target protocol addr */
+            (uint8_t *)&i,                         /* target protocol addr */
             NULL,                                   /* payload */
             0,                                      /* payload size */
             l,                                      /* libnet context */

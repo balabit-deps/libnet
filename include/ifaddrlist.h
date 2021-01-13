@@ -23,17 +23,17 @@
 struct ifaddrlist
 {
 #if (HAVE_SOLARIS || HAVE_HPUX11)
-    u_int addr;
+    uint addr;
 #else
-    u_int32_t addr;              
+    uint32_t addr;              
 #endif
-    int8_t *device;
+    char *device;
 };
 
 struct libnet_ifaddr_list
 {
-    u_int32_t addr;
-    int8_t *device;
+    uint32_t addr;
+    char *device;
 };
 
 int
@@ -46,7 +46,7 @@ ifaddrlist(
 int
 set_up_interface(
     struct sockaddr_in **,
-    u_int8_t **
+    uint8_t **
     );
 
 /* EOF */

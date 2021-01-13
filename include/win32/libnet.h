@@ -47,7 +47,7 @@ extern "C" {
 
 /* __WIN32__ is NOT a predefined MACRO, use _WIN32
  * __CYGWIN__ is defined within the cygwin environment.
- */
+ */ 
 #ifndef __WIN32__
 #define __WIN32__ _WIN32
 #endif
@@ -56,7 +56,8 @@ extern "C" {
 #define HAVE_CONFIG_H 1
 
 /* Some UNIX to Win32 conversions */
-#define snprintf _snprintf
+#define STDOUT_FILENO stdout
+#define snprintf _snprintf 
 #define write _write
 #define open _open
 #define random rand
@@ -68,16 +69,13 @@ extern "C" {
 #define __FUNCTION__ __FILE__
 #endif
 
-#ifndef __MINGW32__
 #pragma comment (lib,"ws2_32")    /* Winsock 2 */
 #pragma comment (lib,"iphlpapi")  /* IP Helper */
 #pragma comment (lib,"wpcap")     /* Winpcap   */
-#pragma comment (lib,"packet")
-#endif
+#pragma comment (lib,"packet")   
+
 /* "@LIBNET_VERSION@" will not work in VC++, so version.h doesn't get populated */
-#ifndef VERSION
 #define VERSION  "1.1.1"
-#endif
 
 /* To use Win32 native versions */
 #define WPCAP 1

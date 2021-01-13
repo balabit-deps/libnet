@@ -32,13 +32,8 @@
 #ifndef __LIBNET_TYPES_H
 #define __LIBNET_TYPES_H
 
-/* Solaris has messed up POSIX nomenclature for these */
-#if (__sun__ && __svr4__) || __hpux__
-typedef uint8_t  u_int8_t;
-typedef uint16_t u_int16_t;
-typedef uint32_t u_int32_t;
-typedef uint64_t u_int64_t;
-#endif
+/* libnet should be using the standard type names, so mapping standard
+ * to non-standard should not be necessary. */
 
 #endif  /* __LIBNET_TYPES_H */
 

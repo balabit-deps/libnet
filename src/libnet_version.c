@@ -1,5 +1,5 @@
 /*
- *  $Id: libnet_version.c,v 1.6 2004/01/03 20:31:02 mike Exp $
+ *  $Id: libnet_version.c,v 1.7 2004/11/09 07:05:07 mike Exp $
  *
  *  libnet
  *  libnet_version.c - dummy version function to define version info
@@ -37,8 +37,11 @@
 #include "../include/win32/libnet.h"
 #endif
 
-static const char banner[] =
-"libnet version "VERSION" (c) 1998 - 2004 Mike D. Schiffman <mike@infonexus.com>\n";
+#ifndef STDOUT_FILENO
+#define STDOUT_FILENO 1
+#endif
+
+static const char banner[] = "libnet version "VERSION"";
 
 void
 __libnet_print_vers(void)
@@ -46,9 +49,17 @@ __libnet_print_vers(void)
     /*
      *  We don't check for error cos we really don't care.
      */
-     #if defined (__WIN32__)
-	 fprintf(stdout,"%s",banner);
-     #else
-     write(STDOUT_FILENO, banner, sizeof(banner) - 1);
-     #endif
+#if defined (__WIN32__)
+     fprintf(stdout, "%s", banner);
+#else
+     (void)write(STDOUT_FILENO, banner, sizeof(banner) - 1);
+#endif
 }
+
+const char *
+libnet_version(void)
+{
+    return (banner);
+}
+
+/* EOF */

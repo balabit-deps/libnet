@@ -52,8 +52,16 @@
 #endif
 #endif  /* HAVE_PACKET_SOCKET */
 
-#include "../include/bpf.h"
 #include "../include/libnet.h"
+
+/* These should not vary across linux systems, and are only defined in
+ * <pcap-bpf.h>, included from <pcap.h>, but since we have no other dependency
+ * on libpcap right now, define locally. I'm not sure if this is a good idea,
+ * but we'll try.
+ */
+#define DLT_PRONET	4	/* Proteon ProNET Token Ring */
+#define DLT_FDDI	10	/* FDDI */
+#define DLT_RAW		12	/* raw IP */
 
 #include "../include/gnuc.h"
 #ifdef HAVE_OS_PROTO_H
@@ -79,8 +87,15 @@ libnet_open_link(libnet_t *l)
 #endif
     if (l->fd == -1)
     {
-        snprintf(l->err_buf, LIBNET_ERRBUF_SIZE,
-                "socket: %s", strerror(errno));
+        if (errno == EPERM) {
+            snprintf(l->err_buf, LIBNET_ERRBUF_SIZE,
+                     "%s(): UID/EUID 0 or capability CAP_NET_RAW required",
+                     __func__);
+
+        } else {
+            snprintf(l->err_buf, LIBNET_ERRBUF_SIZE,
+                     "socket: %s", strerror(errno));
+        }
         goto bad;
     }
 
@@ -175,7 +190,7 @@ libnet_close_link(libnet_t *l)
 
 #if (HAVE_PACKET_SOCKET)
 static int
-get_iface_index(int fd, const int8_t *device)
+get_iface_index(int fd, const char *device)
 {
     struct ifreq ifr;
  
@@ -194,7 +209,7 @@ get_iface_index(int fd, const int8_t *device)
 
 
 int
-libnet_write_link(libnet_t *l, u_int8_t *packet, u_int32_t size)
+libnet_write_link(libnet_t *l, const uint8_t *packet, uint32_t size)
 {
     int c;
 #if (HAVE_PACKET_SOCKET)
@@ -291,5 +306,11 @@ bad:
     return (NULL);
 }
 
+/* ---- Emacs Variables ----
+ * Local Variables:
+ * c-basic-offset: 4
+ * indent-tabs-mode: nil
+ * End:
+ */
 
 /* EOF */

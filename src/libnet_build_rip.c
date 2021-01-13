@@ -1,5 +1,5 @@
 /*
- *  $Id: libnet_build_rip.c,v 1.8 2004/01/03 20:31:01 mike Exp $
+ *  $Id: libnet_build_rip.c,v 1.9 2004/04/13 17:32:28 mike Exp $
  *
  *  libnet
  *  libnet_build_rip.c - RIP packet assembler
@@ -40,11 +40,12 @@
 #endif
 
 libnet_ptag_t
-libnet_build_rip(u_int8_t cmd, u_int8_t version, u_int16_t rd, u_int16_t af, u_int16_t rt,
-            u_int32_t addr, u_int32_t mask, u_int32_t next_hop, u_int32_t metric,
-            u_int8_t *payload, u_int32_t payload_s, libnet_t *l, libnet_ptag_t ptag)
+libnet_build_rip(uint8_t cmd, uint8_t version, uint16_t rd, uint16_t af,
+uint16_t rt, uint32_t addr, uint32_t mask, uint32_t next_hop,
+uint32_t metric, const uint8_t *payload, uint32_t payload_s, libnet_t *l,
+libnet_ptag_t ptag)
 {
-    u_int32_t n, h;
+    uint32_t n, h;
     libnet_pblock_t *p;
     struct libnet_rip_hdr rip_hdr;
 
@@ -66,38 +67,25 @@ libnet_build_rip(u_int8_t cmd, u_int8_t version, u_int16_t rd, u_int16_t af, u_i
         return (-1);
     }
 
-	memset(&rip_hdr, 0, sizeof(rip_hdr));
-	rip_hdr.rip_cmd      = cmd;
+    memset(&rip_hdr, 0, sizeof(rip_hdr));
+    rip_hdr.rip_cmd      = cmd;
     rip_hdr.rip_ver      = version;
     rip_hdr.rip_rd       = htons(rd);
     rip_hdr.rip_af       = htons(af);
     rip_hdr.rip_rt       = htons(rt);
-    rip_hdr.rip_addr     = htonl(addr);
-    rip_hdr.rip_mask     = htonl(mask);
-    rip_hdr.rip_next_hop = htonl(next_hop);
+    rip_hdr.rip_addr     = addr;
+    rip_hdr.rip_mask     = mask;
+    rip_hdr.rip_next_hop = next_hop;
     rip_hdr.rip_metric   = htonl(metric);
 
-    n = libnet_pblock_append(l, p, (u_int8_t *)&rip_hdr, LIBNET_RIP_H);
+    n = libnet_pblock_append(l, p, (uint8_t *)&rip_hdr, LIBNET_RIP_H);
     if (n == -1)
     {
         goto bad;
     }
 
-    if ((payload && !payload_s) || (!payload && payload_s))
-    {
-        snprintf(l->err_buf, LIBNET_ERRBUF_SIZE,
-			    "%s(): payload inconsistency\n", __func__);
-        goto bad;
-    }
-
-    if (payload && payload_s)
-    {
-        n = libnet_pblock_append(l, p, payload, payload_s);
-        if (n == -1)
-        {
-            goto bad;
-        }
-    }
+    /* boilerplate payload sanity check / append macro */
+    LIBNET_DO_PAYLOAD(l, p);
 
     return (ptag ? ptag : libnet_pblock_update(l, p, h, LIBNET_PBLOCK_RIP_H));
 bad:

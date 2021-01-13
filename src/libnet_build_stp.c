@@ -1,5 +1,5 @@
 /*
- *  $Id: libnet_build_stp.c,v 1.8 2004/01/15 20:11:15 mike Exp $
+ *  $Id: libnet_build_stp.c,v 1.9 2004/04/13 17:32:28 mike Exp $
  *
  *  libnet
  *  libnet_build_stp.c - STP packet assembler
@@ -40,20 +40,20 @@
 #endif
 
 libnet_ptag_t
-libnet_build_stp_conf(u_int16_t id, u_int8_t version, u_int8_t bpdu_type,
-u_int8_t flags, u_int8_t *root_id, u_int32_t root_pc, u_int8_t *bridge_id,
-u_int16_t port_id, u_int16_t message_age, u_int16_t max_age,
-u_int16_t hello_time, u_int16_t f_delay, u_int8_t *payload,
-u_int32_t payload_s, libnet_t *l, libnet_ptag_t ptag)
+libnet_build_stp_conf(uint16_t id, uint8_t version, uint8_t bpdu_type,
+uint8_t flags, const uint8_t *root_id, uint32_t root_pc, const uint8_t *bridge_id,
+uint16_t port_id, uint16_t message_age, uint16_t max_age,
+uint16_t hello_time, uint16_t f_delay, const uint8_t *payload,
+uint32_t payload_s, libnet_t *l, libnet_ptag_t ptag)
 {
-    u_int32_t n, h;
+    uint32_t n, h;
     libnet_pblock_t *p;
 
     /* until we get some data marshalling in place we can't use this */
     /* struct libnet_stp_conf_hdr stp_hdr; */
-    u_int8_t stp_hdr[35];
-    u_int16_t value_s;
-    u_int32_t value_l;
+    uint8_t stp_hdr[35];
+    uint16_t value_s;
+    uint32_t value_l;
 
     if (l == NULL)
     { 
@@ -127,28 +127,15 @@ u_int32_t payload_s, libnet_t *l, libnet_ptag_t ptag)
 
 
     /* until we get some data marshalling in place we can't use this */
-    /*n = libnet_pblock_append(l, p, (u_int8_t *)&stp_hdr, LIBNET_STP_CONF_H); */
+    /*n = libnet_pblock_append(l, p, (uint8_t *)&stp_hdr, LIBNET_STP_CONF_H); */
     n = libnet_pblock_append(l, p, stp_hdr, LIBNET_STP_CONF_H);
     if (n == -1)
     {
         goto bad;
     }
 
-    if ((payload && !payload_s) || (!payload && payload_s))
-    {
-        snprintf(l->err_buf, LIBNET_ERRBUF_SIZE,
-			    "%s(): payload inconsistency\n", __func__);
-        goto bad;
-    }
- 
-    if (payload && payload_s)
-    {
-        n = libnet_pblock_append(l, p, payload, payload_s);
-        if (n == -1)
-        {
-            goto bad;
-        }
-    }
+    /* boilerplate payload sanity check / append macro */
+    LIBNET_DO_PAYLOAD(l, p);
  
     return (ptag ? ptag : libnet_pblock_update(l, p, h,
             LIBNET_PBLOCK_STP_CONF_H));
@@ -159,10 +146,10 @@ bad:
 
 
 libnet_ptag_t
-libnet_build_stp_tcn(u_int16_t id, u_int8_t version, u_int8_t bpdu_type,
-            u_int8_t *payload, u_int32_t payload_s, libnet_t *l, libnet_ptag_t ptag)
+libnet_build_stp_tcn(uint16_t id, uint8_t version, uint8_t bpdu_type,
+const uint8_t *payload, uint32_t payload_s, libnet_t *l, libnet_ptag_t ptag)
 {
-    u_int32_t n, h;
+    uint32_t n, h;
     libnet_pblock_t *p;
 
     struct libnet_stp_tcn_hdr stp_hdr;
@@ -185,32 +172,19 @@ libnet_build_stp_tcn(u_int16_t id, u_int8_t version, u_int8_t bpdu_type,
         return (-1);
     }
 
-	memset(&stp_hdr, 0, sizeof(stp_hdr));
-	stp_hdr.stp_id        = htons(id);
+    memset(&stp_hdr, 0, sizeof(stp_hdr));
+    stp_hdr.stp_id        = htons(id);
     stp_hdr.stp_version   = version;
     stp_hdr.stp_bpdu_type = bpdu_type;
 
-    n = libnet_pblock_append(l, p, (u_int8_t *)&stp_hdr, LIBNET_STP_TCN_H);
+    n = libnet_pblock_append(l, p, (uint8_t *)&stp_hdr, LIBNET_STP_TCN_H);
     if (n == -1)
     {
         goto bad;
     }
  
-    if ((payload && !payload_s) || (!payload && payload_s))
-    {
-        snprintf(l->err_buf, LIBNET_ERRBUF_SIZE,
-			    "%s(): payload inconsistency\n", __func__);
-        goto bad;
-    }
-
-    if (payload && payload_s)
-    {
-        n = libnet_pblock_append(l, p, payload, payload_s);
-        if (n == -1)
-        {
-            goto bad;
-        }
-    }
+    /* boilerplate payload sanity check / append macro */
+    LIBNET_DO_PAYLOAD(l, p);
  
     return (ptag ? ptag : libnet_pblock_update(l, p, h,
             LIBNET_PBLOCK_STP_TCN_H));

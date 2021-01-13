@@ -6,11 +6,10 @@
 #
 # Process this file with automake to produce a Makefile.in script.
 
-ACLOCAL_AMFLAGS=-I m4
 include $(top_srcdir)/Makefile.am.common
 
-SUBDIRS = include src
+SUBDIRS = include src sample win32
 
-EXTRA_DIST = Makefile.am.common sample
+EXTRA_DIST = Makefile.am.common
 
 bin_SCRIPTS = libnet-config

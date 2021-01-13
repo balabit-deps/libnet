@@ -1,5 +1,5 @@
 /*
- *  $Id: libnet_build_ntp.c,v 1.9 2004/03/01 20:26:12 mike Exp $
+ *  $Id: libnet_build_ntp.c,v 1.11 2004/11/09 07:05:07 mike Exp $
  *
  *  libnet
  *  libnet_build_ntp.c - NTP packet assembler
@@ -40,15 +40,15 @@
 #endif
 
 libnet_ptag_t
-libnet_build_ntp(u_int8_t leap_indicator, u_int8_t version, u_int8_t mode,
-u_int8_t stratum, u_int8_t poll, u_int8_t precision, u_int16_t delay_int,
-u_int16_t delay_frac, u_int16_t dispersion_int, u_int16_t dispersion_frac,
-u_int32_t reference_id, u_int32_t ref_ts_int, u_int32_t ref_ts_frac,
-u_int32_t orig_ts_int, u_int32_t orig_ts_frac, u_int32_t rec_ts_int,
-u_int32_t rec_ts_frac, u_int32_t xmt_ts_int, u_int32_t xmt_ts_frac,
-u_int8_t *payload, u_int32_t payload_s, libnet_t *l, libnet_ptag_t ptag)
+libnet_build_ntp(uint8_t leap_indicator, uint8_t version, uint8_t mode,
+uint8_t stratum, uint8_t poll, uint8_t precision, uint16_t delay_int,
+uint16_t delay_frac, uint16_t dispersion_int, uint16_t dispersion_frac,
+uint32_t reference_id, uint32_t ref_ts_int, uint32_t ref_ts_frac,
+uint32_t orig_ts_int, uint32_t orig_ts_frac, uint32_t rec_ts_int,
+uint32_t rec_ts_frac, uint32_t xmt_ts_int, uint32_t xmt_ts_frac,
+const uint8_t *payload, uint32_t payload_s, libnet_t *l, libnet_ptag_t ptag)
 {
-    u_int32_t n, h;
+    uint32_t n, h;
     libnet_pblock_t *p;
     struct libnet_ntp_hdr ntp_hdr;
 
@@ -85,32 +85,19 @@ u_int8_t *payload, u_int32_t payload_s, libnet_t *l, libnet_ptag_t ptag)
     ntp_hdr.ntp_ref_ts.fraction     = htonl(ref_ts_frac);
     ntp_hdr.ntp_orig_ts.integer     = htonl(orig_ts_int);
     ntp_hdr.ntp_orig_ts.fraction    = htonl(orig_ts_frac);
-    ntp_hdr.ntp_rec_ts.integer      = htonl(orig_ts_int);
-    ntp_hdr.ntp_rec_ts.fraction     = htonl(orig_ts_frac);
+    ntp_hdr.ntp_rec_ts.integer      = htonl(rec_ts_int);
+    ntp_hdr.ntp_rec_ts.fraction     = htonl(rec_ts_frac);
     ntp_hdr.ntp_xmt_ts.integer      = htonl(xmt_ts_int);
     ntp_hdr.ntp_xmt_ts.fraction     = htonl(xmt_ts_frac);
 
-    n = libnet_pblock_append(l, p, (u_int8_t *)&ntp_hdr, LIBNET_NTP_H);
+    n = libnet_pblock_append(l, p, (uint8_t *)&ntp_hdr, LIBNET_NTP_H);
     if (n == -1)
     {
         goto bad;
     }
 
-    if ((payload && !payload_s) || (!payload && payload_s))
-    {
-        snprintf(l->err_buf, LIBNET_ERRBUF_SIZE,
-                "%s(): payload inconsistency\n", __func__);
-        goto bad;
-    }
-
-    if (payload && payload_s)
-    {
-        n = libnet_pblock_append(l, p, payload, payload_s);
-        if (n == -1)
-        {
-            goto bad;
-        }
-    }
+    /* boilerplate payload sanity check / append macro */
+    LIBNET_DO_PAYLOAD(l, p);
 
     return (ptag ? ptag : libnet_pblock_update(l, p, h, LIBNET_PBLOCK_NTP_H));
 bad:

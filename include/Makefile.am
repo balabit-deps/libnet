@@ -2,6 +2,8 @@
 
 include $(top_srcdir)/Makefile.am.common
 
-include_HEADERS = libnet.h bpf.h  gnuc.h  ifaddrlist.h 
- 
-SUBDIRS = libnet
+nodist_include_HEADERS = libnet.h
+
+EXTRA_DIST = bpf.h gnuc.h ifaddrlist.h
+
+SUBDIRS = libnet win32

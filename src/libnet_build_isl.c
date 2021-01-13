@@ -1,5 +1,5 @@
 /*
- *  $Id: libnet_build_isl.c,v 1.9 2004/01/03 20:31:01 mike Exp $
+ *  $Id: libnet_build_isl.c,v 1.10 2004/04/13 17:32:28 mike Exp $
  *
  *  libnet
  *  libnet_build_isl.c - cisco's inter-switch link assembler
@@ -40,12 +40,12 @@
 #endif
 
 libnet_ptag_t
-libnet_build_isl(u_int8_t *dhost, u_int8_t type, u_int8_t user, u_int8_t *shost,
-            u_int16_t len, u_int8_t *snap, u_int16_t vid, u_int16_t index,
-            u_int16_t reserved, u_int8_t *payload, u_int32_t payload_s,
-            libnet_t *l, libnet_ptag_t ptag)
+libnet_build_isl(uint8_t *dhost, uint8_t type, uint8_t user,
+uint8_t *shost, uint16_t len, const uint8_t *snap, uint16_t vid,
+uint16_t portindex, uint16_t reserved, const uint8_t *payload,
+uint32_t payload_s, libnet_t *l, libnet_ptag_t ptag)
 {
-    u_int32_t n, h;
+    uint32_t n;
     libnet_pblock_t *p;
     struct libnet_isl_hdr isl_hdr;
 
@@ -55,7 +55,6 @@ libnet_build_isl(u_int8_t *dhost, u_int8_t type, u_int8_t user, u_int8_t *shost,
     }
 
     n = LIBNET_ISL_H + payload_s;           /* size of memory block */
-    h = 0;
 
     /*
      *  Find the existing protocol block if a ptag is specified, or create
@@ -67,38 +66,25 @@ libnet_build_isl(u_int8_t *dhost, u_int8_t type, u_int8_t user, u_int8_t *shost,
         return (-1);
     }
 
-	memset(&isl_hdr, 0, sizeof(isl_hdr));
-	memcpy(&isl_hdr.isl_dhost, dhost, 5);
+    memset(&isl_hdr, 0, sizeof (isl_hdr));
+    memcpy(&isl_hdr.isl_dhost, dhost, sizeof(isl_hdr.isl_dhost));
     isl_hdr.isl_type    = type;
     isl_hdr.isl_user    = user;
-    memcpy(&isl_hdr.isl_shost, shost, 6);
+    memcpy(&isl_hdr.isl_shost, shost, sizeof(isl_hdr.isl_shost));
     isl_hdr.isl_len     = htons(len);
-    memcpy(&isl_hdr.isl_dhost, snap, 6);
+    memcpy(&isl_hdr.isl_snap, snap, sizeof(isl_hdr.isl_snap));
     isl_hdr.isl_vid     = htons(vid);
-    isl_hdr.isl_index   = htons(index);
+    isl_hdr.isl_index   = htons(portindex);
     isl_hdr.isl_reserved= htons(reserved);
 
-    n = libnet_pblock_append(l, p, (u_int8_t *)&isl_hdr, LIBNET_ISL_H);
+    n = libnet_pblock_append(l, p, (uint8_t *)&isl_hdr, LIBNET_ISL_H);
     if (n == -1)
     {
         goto bad;
     }
 
-    if ((payload && !payload_s) || (!payload && payload_s))
-    {
-         snprintf(l->err_buf, LIBNET_ERRBUF_SIZE,
-			     "%s(): payload inconsistency\n", __func__);
-        goto bad;
-    }
-
-    if (payload && payload_s)
-    {
-        n = libnet_pblock_append(l, p, payload, payload_s);
-        if (n == -1)
-        {
-            goto bad;
-        }
-    }
+    /* boilerplate payload sanity check / append macro */
+    LIBNET_DO_PAYLOAD(l, p);
 
     /* we need to compute the CRC for the ethernet frame and the ISL frame */
     libnet_pblock_setflags(p, LIBNET_PBLOCK_DO_CHECKSUM);
@@ -108,6 +94,5 @@ bad:
     libnet_pblock_delete(l, p);
     return (-1);
 }
-
 
 /* EOF */

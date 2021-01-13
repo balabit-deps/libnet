@@ -1,4 +1,4 @@
-# $Id: Makefile.am,v 1.5 2004/03/11 18:50:20 mike Exp $
+# $Id: Makefile.am,v 1.6 2004/11/09 07:05:07 mike Exp $
 #
 # Libnet automake information file
 # Copyright (c) 1998 - 2004 Mike D. Schiffman <mike@infonexus.com>
@@ -7,6 +7,8 @@
 # Process this file with automake to produce a Makefile.in script.
 
 include $(top_srcdir)/Makefile.am.common
+
+EXTRA_DIST = libnet_dll.c
 
 lib_LTLIBRARIES = libnet.la
 
@@ -24,11 +26,13 @@ libnet_la_SOURCES = libnet_asn1.c \
 			libnet_build_ethernet.c \
 			libnet_build_fddi.c \
 			libnet_build_gre.c \
+			libnet_build_hsrp.c \
 			libnet_build_icmp.c \
 			libnet_build_igmp.c \
 			libnet_build_ip.c \
 			libnet_build_ipsec.c \
 			libnet_build_isl.c \
+			libnet_build_link.c \
 			libnet_build_mpls.c \
 			libnet_build_ntp.c \
 			libnet_build_ospf.c \
@@ -59,18 +63,24 @@ libnet_la_SOURCES = libnet_asn1.c \
 
 libnet_la_LIBADD = @LTLIBOBJS@
 
-#   Here are a set of rules to help you update your library version
-# information:
-# 
-#   1. If the library source code has changed at all since the last
-#      update, then increment REVISION (`C:R:A' becomes `C:r+1:A').
-# 
-#   2. If any interfaces have been added, removed, or changed since the
-#      last update, increment CURRENT, and set REVISION to 0.
-# 
-#   3. If any interfaces have been added since the last public release,
-#      then increment AGE.
-# 
-#   4. If any interfaces have been removed since the last public release,
-#      then set AGE to 0.
-libnet_la_LDFLAGS = -no-undefined -version-info 4:0:3 # CURRENT[:REVISION[:AGE]]
+# Note: this version-info should NOT simply be the version of the libnet
+# package. See:
+#   http://www.sourceware.org/autobook/autobook/autobook_91.html
+# for the rules.
+#
+# Summary:
+#
+# Form is current:revision:age.
+#
+# New APIs, backwards compatible, increment current and age.
+# Bug fix, no new APIs, increment revision.
+#
+# Note:
+# 1.1.2.1-fork is 5:0:4
+# 1.1.3 will be 6:0:5  -> new interfaces, backwards compatible
+# 1.1.4 was 6:0:5 -> probably an error on my part
+# 1.1.5 is 7:0:6 -> new APIs, backwards compat
+# 1.1.6 is 8:0:7 -> new APIs, backwards compat
+
+libnet_la_LDFLAGS = -version-info 8:0:7 -Wl
+

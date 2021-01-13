@@ -50,7 +50,8 @@ static libnet_cq_t *l_cq = NULL;
 static libnet_cqd_t l_cqd = {0, CQ_LOCK_UNLOCKED, NULL};
 
 
-static int set_cq_lock(u_int x) 
+static int
+set_cq_lock(uint x) 
 {
     if (check_cq_lock(x))
     {
@@ -61,7 +62,8 @@ static int set_cq_lock(u_int x)
     return (1);
 }
 
-static int clear_cq_lock(u_int x) 
+static int
+clear_cq_lock(uint x) 
 {
     if (!check_cq_lock(x))
     {
@@ -114,7 +116,7 @@ libnet_cq_add(libnet_t *l, char *label)
 
         /* label the context with the user specified string */
         strncpy(l->label, label, LIBNET_LABEL_SIZE);
-        l->label[LIBNET_LABEL_SIZE] = '\0';
+        l->label[LIBNET_LABEL_SIZE - 1] = '\0';
 
         l_cq->next = NULL;
         l_cq->prev = NULL;
@@ -145,7 +147,7 @@ libnet_cq_add(libnet_t *l, char *label)
 
     /* label the context with the user specified string */
     strncpy(l->label, label, LIBNET_LABEL_SIZE);
-    l->label[LIBNET_LABEL_SIZE] = '\0';
+    l->label[LIBNET_LABEL_SIZE -1] = '\0';
 
     new->next = l_cq;
     new->prev = NULL;
@@ -174,8 +176,6 @@ libnet_cq_remove(libnet_t *l)
 
     if (l == NULL)
     {
-        snprintf(l->err_buf, LIBNET_ERRBUF_SIZE,
-                "%s(): can't remove empty libnet context\n", __func__);
         return(NULL);
     }
 
@@ -325,7 +325,7 @@ libnet_cq_find_by_label(char *label)
     return (p ? p->context : NULL);
 }
 
-int8_t *
+const char *
 libnet_cq_getlabel(libnet_t *l)
 {
     return (l->label);
@@ -388,8 +388,20 @@ libnet_cq_next()
     return (l_cqd.current ? l_cqd.current->context : NULL);
 }
 
-u_int32_t
+uint32_t
 libnet_cq_size()
 {
     return (l_cqd.node);
 }
+
+uint32_t
+libnet_cq_end_loop()
+{
+    if (! clear_cq_lock(CQ_LOCK_WRITE))
+    {
+        return (0);
+    }
+    l_cqd.current = l_cq;
+    return (1);
+}
+

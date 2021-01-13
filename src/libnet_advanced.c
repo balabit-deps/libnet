@@ -1,5 +1,5 @@
 /*
- *  $Id: libnet_advanced.c,v 1.7 2004/02/16 23:13:38 mike Exp $
+ *  $Id: libnet_advanced.c,v 1.8 2004/11/09 07:05:07 mike Exp $
  *
  *  libnet
  *  libnet_advanced.c - Advanced routines
@@ -40,7 +40,7 @@
 #endif
 
 int
-libnet_adv_cull_packet(libnet_t *l, u_int8_t **packet, u_int32_t *packet_s)
+libnet_adv_cull_packet(libnet_t *l, uint8_t **packet, uint32_t *packet_s)
 {
     *packet = NULL;
     *packet_s = 0;
@@ -57,8 +57,8 @@ libnet_adv_cull_packet(libnet_t *l, u_int8_t **packet, u_int32_t *packet_s)
 }
 
 int
-libnet_adv_cull_header(libnet_t *l, libnet_ptag_t ptag, u_int8_t **header,
-        u_int32_t *header_s)
+libnet_adv_cull_header(libnet_t *l, libnet_ptag_t ptag, uint8_t **header,
+        uint32_t *header_s)
 {
     libnet_pblock_t *p;
 
@@ -86,7 +86,7 @@ libnet_adv_cull_header(libnet_t *l, libnet_ptag_t ptag, u_int8_t **header,
 }
 
 int
-libnet_adv_write_link(libnet_t *l, u_int8_t *packet, u_int32_t packet_s)
+libnet_adv_write_link(libnet_t *l, const uint8_t *packet, uint32_t packet_s)
 {
     int c;
 
@@ -119,8 +119,42 @@ libnet_adv_write_link(libnet_t *l, u_int8_t *packet, u_int32_t packet_s)
     return (c);
 }
 
+int
+libnet_adv_write_raw_ipv4(libnet_t *l, const uint8_t *packet, uint32_t packet_s)
+{
+    int c;
+
+    if (l->injection_type != LIBNET_RAW4_ADV)
+    {
+        snprintf(l->err_buf, LIBNET_ERRBUF_SIZE,
+                "%s(): advanced raw4 mode not enabled\n", __func__);
+        return (-1);
+    }
+    c = libnet_write_raw_ipv4(l, packet, packet_s);
+
+    /* do statistics */
+    if (c == packet_s)
+    {
+        l->stats.packets_sent++;
+        l->stats.bytes_written += c;
+    }
+    else
+    {
+        l->stats.packet_errors++;
+        /*
+         *  XXX - we probably should have a way to retrieve the number of
+         *  bytes actually written (since we might have written something).
+         */
+        if (c > 0)
+        {
+            l->stats.bytes_written += c;
+        }
+    }
+    return (c);
+}
+
 void
-libnet_adv_free_packet(libnet_t *l, u_int8_t *packet)
+libnet_adv_free_packet(libnet_t *l, uint8_t *packet)
 {
     /*
      *  Restore original pointer address so free won't complain about a

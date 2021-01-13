@@ -1,5 +1,5 @@
 /*
- *  $Id: libnet_build_ethernet.c,v 1.8 2004/01/03 20:31:01 mike Exp $
+ *  $Id: libnet_build_ethernet.c,v 1.9 2004/04/13 17:32:28 mike Exp $
  *
  *  libnet
  *  libnet_build_ethernet.c - ethernet packet assembler
@@ -40,10 +40,10 @@
 #endif
 
 libnet_ptag_t
-libnet_build_ethernet(u_int8_t *dst, u_int8_t *src, u_int16_t type, u_int8_t *payload,
-            u_int32_t payload_s, libnet_t *l, libnet_ptag_t ptag)
+libnet_build_ethernet(const uint8_t *dst, const uint8_t *src, uint16_t type, 
+const uint8_t *payload, uint32_t payload_s, libnet_t *l, libnet_ptag_t ptag)
 {
-    u_int32_t n, h;
+    uint32_t n, h;
     libnet_pblock_t *p;
     struct libnet_ethernet_hdr eth_hdr;
 
@@ -76,32 +76,19 @@ libnet_build_ethernet(u_int8_t *dst, u_int8_t *src, u_int16_t type, u_int8_t *pa
         return (-1);
     }
 
-	memset(&eth_hdr, 0, sizeof(eth_hdr));
-	memcpy(eth_hdr.ether_dhost, dst, ETHER_ADDR_LEN);  /* destination address */
+    memset(&eth_hdr, 0, sizeof(eth_hdr));
+    memcpy(eth_hdr.ether_dhost, dst, ETHER_ADDR_LEN);  /* destination address */
     memcpy(eth_hdr.ether_shost, src, ETHER_ADDR_LEN);  /* source address */
     eth_hdr.ether_type = htons(type);                  /* packet type */
 
-    n = libnet_pblock_append(l, p, (u_int8_t *)&eth_hdr, LIBNET_ETH_H);
+    n = libnet_pblock_append(l, p, (uint8_t *)&eth_hdr, LIBNET_ETH_H);
     if (n == -1)
     {
         goto bad;
     }
 
-    if ((payload && !payload_s) || (!payload && payload_s))
-    {
-         snprintf(l->err_buf, LIBNET_ERRBUF_SIZE,
-			     "%s(): payload inconsistency\n", __func__);
-        goto bad;
-    }
- 
-    if (payload && payload_s)
-    {
-        n = libnet_pblock_append(l, p, payload, payload_s);
-        if (n == -1)
-        {
-            goto bad;
-        }
-    }
+    /* boilerplate payload sanity check / append macro */
+    LIBNET_DO_PAYLOAD(l, p);
  
     return (ptag ? ptag : libnet_pblock_update(l, p, h, LIBNET_PBLOCK_ETH_H));
 bad:
@@ -111,9 +98,9 @@ bad:
 
 
 libnet_ptag_t
-libnet_autobuild_ethernet(u_int8_t *dst, u_int16_t type, libnet_t *l)
+libnet_autobuild_ethernet(const uint8_t *dst, uint16_t type, libnet_t *l)
 {
-    u_int32_t n, h;
+    uint32_t n, h;
     struct libnet_ether_addr *src;
     libnet_pblock_t *p;
     libnet_ptag_t ptag;
@@ -154,12 +141,12 @@ libnet_autobuild_ethernet(u_int8_t *dst, u_int16_t type, libnet_t *l)
         return (-1);
     }
 
-	memset(&eth_hdr, 0, sizeof(eth_hdr));
-	memcpy(eth_hdr.ether_dhost, dst, ETHER_ADDR_LEN);  /* destination address */
+    memset(&eth_hdr, 0, sizeof(eth_hdr));
+    memcpy(eth_hdr.ether_dhost, dst, ETHER_ADDR_LEN);  /* destination address */
     memcpy(eth_hdr.ether_shost, src, ETHER_ADDR_LEN);  /* source address */
     eth_hdr.ether_type = htons(type);                  /* packet type */
 
-    n = libnet_pblock_append(l, p, (u_int8_t *)&eth_hdr, LIBNET_ETH_H);
+    n = libnet_pblock_append(l, p, (uint8_t *)&eth_hdr, LIBNET_ETH_H);
     if (n == -1)
     {
         goto bad;

@@ -3,7 +3,4 @@ builder:
   name: BalabitBuilder
   flags: "out-of-tree-build-incompatible"
 platforms:
-  - aix-6.1/powerpc
   - linux-glibc2.11/amd64
-  - windows-2012/amd64
-  - windows-2012/i386

@@ -3,7 +3,7 @@
  * libnet 1.1
  * Build a TFTP scanner using payload
  *
- * Copyright (c) 2003 Frédéric Raynal <pappy@security-labs.org>
+ * Copyright (c) 2003 FrÃ©dÃ©ric Raynal <pappy@security-labs.org>
  * All rights reserved.
  *
  * Ex:
@@ -49,7 +49,7 @@ main(int argc, char *argv[])
     char *filename = "/etc/passwd";
     char mode[] = "netascii";
     u_char *payload = NULL;
-    u_int payload_s = 0;
+    uint payload_s = 0;
     
 
     printf("libnet 1.1 packet shaping: UDP + payload[raw] == TFTP\n");

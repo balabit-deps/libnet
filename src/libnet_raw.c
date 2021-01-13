@@ -40,11 +40,7 @@
 #endif
 
 #if defined (__WIN32__)
-#if defined(__CYGWIN__)
 int
-#else
-SOCKET
-#endif
 libnet_open_raw4(libnet_t *l)
 {
     return (libnet_open_link(l));
@@ -71,7 +67,7 @@ libnet_close_raw6(libnet_t *l)
 int
 libnet_open_raw4(libnet_t *l)
 {
-    int len;
+    int len; /* now supposed to be socklen_t, but maybe old systems used int? */
 
 #if !(__WIN32__)
      int n = 1;
@@ -111,8 +107,7 @@ libnet_open_raw4(libnet_t *l)
     if (setsockopt(l->fd, IPPROTO_IP, IP_HDRINCL, nptr, sizeof(n)) == -1)
 #else
     n = TRUE;
-    if (setsockopt(l->fd, IPPROTO_IP, IP_HDRINCL, (int8_t *)&n,
-            sizeof(n)) == -1)
+    if (setsockopt(l->fd, IPPROTO_IP, IP_HDRINCL, &n, sizeof(n)) == -1)
 #endif
 
     {
@@ -223,7 +218,7 @@ libnet_open_raw6(libnet_t *l)
         return (-1);
     } 
 
-    l->fd = socket(PF_INET6, SOCK_RAW, IPPROTO_RAW);
+    l->fd = socket(AF_INET6, SOCK_RAW, IPPROTO_RAW);
     if (l->fd == -1)
     {
         snprintf(l->err_buf, LIBNET_ERRBUF_SIZE, 
@@ -240,6 +235,13 @@ libnet_open_raw6(libnet_t *l)
                 strerror(errno));
         goto bad;
     }
+    if(l->device != NULL)
+        if(setsockopt(l->fd, SOL_SOCKET, SO_BINDTODEVICE, l->device, strlen(l->device)) == -1) {
+            snprintf(l->err_buf, LIBNET_ERRBUF_SIZE,
+                "%s(): set SO_BINDTODEVICE failed: %s\n", __func__, strerror(errno));
+            goto bad;
+        }
+
 #endif  /* __linux__ */
     return (l->fd);
 

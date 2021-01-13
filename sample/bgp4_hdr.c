@@ -3,7 +3,7 @@
  * libnet 1.1
  * Build a BGP4 header with what you want as payload
  *
- * Copyright (c) 2003 Frédéric Raynal <pappy@security-labs.org>
+ * Copyright (c) 2003 FrÃ©dÃ©ric Raynal <pappy@security-labs.org>
  * All rights reserved.
  *
  *
@@ -65,9 +65,6 @@ main(int argc, char *argv[])
 
     printf("libnet 1.1 packet shaping: BGP4 hdr + payload[raw]\n");
 
-    /*
-     *  Initialize the library.  Root priviledges are required.
-     */
     l = libnet_init(
             LIBNET_RAW4,                            /* injection type */
             NULL,                                   /* network interface */

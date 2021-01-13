@@ -1,5 +1,5 @@
 /*
- *  $Id: libnet-structures.h,v 1.18 2004/03/16 18:40:58 mike Exp $
+ *  $Id: libnet-structures.h,v 1.19 2004/11/09 07:05:07 mike Exp $
  *
  *  libnet-structures.h - Network routine library structures header file
  *
@@ -40,10 +40,10 @@
 typedef struct libnet_port_list_chain libnet_plist_t;
 struct libnet_port_list_chain
 {
-    u_int16_t node;                     /* node number */
-    u_int16_t bport;                    /* beggining port */
-    u_int16_t eport;                    /* terminating port */
-    u_int8_t  id;                       /* global array offset */
+    uint16_t node;                     /* node number */
+    uint16_t bport;                    /* beggining port */
+    uint16_t eport;                    /* terminating port */
+    uint8_t  id;                       /* global array offset */
     libnet_plist_t *next;               /* next node in the list */
 };
 
@@ -52,9 +52,9 @@ struct libnet_port_list_chain
 struct libnet_stats
 {
 #if (!defined(__WIN32__) || (__CYGWIN__))
-    u_int64_t packets_sent;             /* packets sent */
-    u_int64_t packet_errors;            /* packets errors */
-    u_int64_t bytes_written;            /* bytes written */
+    uint64_t packets_sent;             /* packets sent */
+    uint64_t packet_errors;            /* packets errors */
+    uint64_t bytes_written;            /* bytes written */
 #else
     __int64 packets_sent;               /* packets sent */
     __int64 packet_errors;              /* packets errors */
@@ -76,13 +76,24 @@ typedef int32_t libnet_ptag_t;
  */
 struct libnet_protocol_block
 {
-    u_int8_t *buf;                      /* protocol buffer */
-    u_int32_t b_len;                    /* length of buf */
-    u_int16_t h_len;                    /* header length (for checksumming) */
-    u_int32_t ip_offset;                /* offset to IP header for csums */
-    u_int32_t copied;                   /* bytes copied */
-    u_int8_t type;                      /* type of pblock */
+    uint8_t *buf;                      /* protocol buffer */
+    uint32_t b_len;                    /* length of buf */
+    uint16_t h_len;                    /* header length */
+       /* Passed as last argument to libnet_do_checksum(). Not necessarily used
+        * by that function, it is essentially a pblock specific number, passed
+        * from _builder to the _do_checksum
+        *
+        * Unused for IPV4_H block types.
+        *
+        * For protocols that sit on top of IP, it should be the the amount of
+        * buf that will be included in the checksum, starting from the beginning
+        * of the header.
+        */
+    uint32_t copied;                   /* bytes copied - the amount of data copied into buf */
+       /* Used and updated by libnet_pblock_append(). */
+    uint8_t type;                      /* type of pblock */
 /* this needs to be updated every time a new packet builder is added */
+/* libnet_diag_dump_pblock_type() also needs updating for every new pblock tag */
 #define LIBNET_PBLOCK_ARP_H             0x01    /* ARP header */
 #define LIBNET_PBLOCK_DHCPV4_H          0x02    /* DHCP v4 header */
 #define LIBNET_PBLOCK_DNSV4_H           0x03    /* DNS v4 header */
@@ -146,9 +157,21 @@ struct libnet_protocol_block
 #define LIBNET_PBLOCK_IPV6_DESTOPTS_H   0x3d    /* IPv6 dest opts header */
 #define LIBNET_PBLOCK_IPV6_HBHOPTS_H    0x3e    /* IPv6 hop/hop opts header */
 #define LIBNET_PBLOCK_SEBEK_H           0x3f    /* Sebek header */
-    u_int8_t flags;                             /* control flags */
+#define LIBNET_PBLOCK_HSRP_H            0x40    /* HSRP header */
+#define LIBNET_PBLOCK_ICMPV6_H          0x41    /* ICMPv6 header (unused) */
+#define LIBNET_PBLOCK_ICMPV6_ECHO_H     0x46    /* ICMPv6 echo header */
+#define LIBNET_PBLOCK_ICMPV6_UNREACH_H  0x42    /* ICMPv6 unreach header */
+#define LIBNET_PBLOCK_ICMPV6_NDP_NSOL_H 0x43    /* ICMPv6 NDP neighbor solicitation header */
+#define LIBNET_PBLOCK_ICMPV6_NDP_NADV_H 0x44    /* ICMPv6 NDP neighbor advertisement header */
+#define LIBNET_PBLOCK_ICMPV6_NDP_OPT_H  0x45    /* ICMPv6 NDP option */
+
+    uint8_t flags;                             /* control flags */
 #define LIBNET_PBLOCK_DO_CHECKSUM       0x01    /* needs a checksum */
     libnet_ptag_t ptag;                 /* protocol block tag */
+    /* Chains are built from highest level protocol, towards the link level, so
+     * prev traverses away from link level, and next traverses towards the
+     * link level.
+     */
     struct libnet_protocol_block *next; /* next pblock */
     struct libnet_protocol_block *prev; /* prev pblock */
 };
@@ -168,7 +191,8 @@ struct libnet_context
 #else
     int fd;                             /* file descriptor of packet device */
 #endif
-    int injection_type;                 /* raw (ipv4 or ipv6) or link */
+    int injection_type;                 /* one of: */
+#define LIBNET_NONE     0xf8            /* no injection type, only construct packets */
 #define LIBNET_LINK     0x00            /* link-layer interface */
 #define LIBNET_RAW4     0x01            /* raw socket interface (ipv4) */
 #define LIBNET_RAW6     0x02            /* raw socket interface (ipv6) */
@@ -178,11 +202,25 @@ struct libnet_context
 #define LIBNET_RAW6_ADV 0x0a            /* advanced mode raw socket (ipv6) */
 #define LIBNET_ADV_MASK 0x08            /* mask to determine adv mode */
 
+    /* _blocks is the highest level, and _end is closest to link-level */
     libnet_pblock_t *protocol_blocks;   /* protocol headers / data */
     libnet_pblock_t *pblock_end;        /* last node in list */
-    u_int32_t n_pblocks;                /* number of pblocks */
+    uint32_t n_pblocks;                /* number of pblocks */
 
-    int link_type;                      /* link-layer type */
+    int link_type;                      /* link-layer type, a DLT_ value. */
+    /* These are the only values used by libnet (see libnet_build_arp and
+     * libnet_build_link).  Other values are assigned by the various
+     * libnet_link_*.c OS support functions, but are not yet used or supported,
+     * they are effectively dead code. <pcap.h> claims these two are invariant
+     * across operating systems... hopefully it is correct!
+     */
+#ifndef DLT_EN10MB
+# define DLT_EN10MB      1       /* Ethernet (10Mb) */
+#endif
+#ifndef DLT_IEEE802
+# define DLT_IEEE802     6       /* IEEE 802 Networks */
+#endif
+
     int link_offset;                    /* link-layer header size */
     int aligner;                        /* used to align packets */
     char *device;                       /* device name */
@@ -192,7 +230,7 @@ struct libnet_context
     char label[LIBNET_LABEL_SIZE];      /* textual label for cq interface */
 
     char err_buf[LIBNET_ERRBUF_SIZE];   /* error buffer */
-    u_int32_t total_size;               /* total size */
+    uint32_t total_size;               /* total size */
 };
 typedef struct libnet_context libnet_t;
 
@@ -211,8 +249,8 @@ struct _libnet_context_queue
 
 struct _libnet_context_queue_descriptor
 {
-    u_int32_t node;                     /* number of nodes in the list */
-    u_int32_t cq_lock;                  /* lock status */
+    uint32_t node;                     /* number of nodes in the list */
+    uint32_t cq_lock;                  /* lock status */
     libnet_cq_t *current;               /* current context */
 };
 typedef struct _libnet_context_queue_descriptor libnet_cqd_t;

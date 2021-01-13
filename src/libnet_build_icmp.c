@@ -1,5 +1,5 @@
 /*
- *  $Id: libnet_build_icmp.c,v 1.16 2004/03/29 17:24:34 mike Exp $
+ *  $Id: libnet_build_icmp.c,v 1.17 2004/04/13 17:32:28 mike Exp $
  *
  *  libnet
  *  libnet_build_icmp.c - ICMP packet assemblers
@@ -39,24 +39,26 @@
 #include "../include/win32/libnet.h"
 #endif
 
+#include <assert.h>
+
 /* some common cruft for completing ICMP error packets */
 #define LIBNET_BUILD_ICMP_ERR_FINISH(len)                                    \
 do                                                                           \
 {                                                                            \
-    n = libnet_pblock_append(l, p, (u_int8_t *)&icmp_hdr, len);              \
+    n = libnet_pblock_append(l, p, (uint8_t *)&icmp_hdr, len);              \
     if (n == -1)                                                             \
     {                                                                        \
         goto bad;                                                            \
     }                                                                        \
                                                                              \
-    if ((payload && !payload_s) || (!payload && payload_s))                  \
+    if (payload_s && !payload)                                               \
     {                                                                        \
         snprintf(l->err_buf, LIBNET_ERRBUF_SIZE,                             \
                 "%s(): payload inconsistency\n", __func__);                  \
         goto bad;                                                            \
     }                                                                        \
                                                                              \
-    if (payload && payload_s)                                                \
+    if (payload_s)                                                           \
     {                                                                        \
         n = libnet_pblock_append(l, p, payload, payload_s);                  \
         if (n == -1)                                                         \
@@ -72,11 +74,11 @@ do                                                                           \
 } while (0)
 
 libnet_ptag_t
-libnet_build_icmpv4_echo(u_int8_t type, u_int8_t code, u_int16_t sum,
-u_int16_t id, u_int16_t seq, u_int8_t *payload, u_int32_t payload_s,
+libnet_build_icmpv4_echo(uint8_t type, uint8_t code, uint16_t sum,
+uint16_t id, uint16_t seq, const uint8_t *payload, uint32_t payload_s,
 libnet_t *l, libnet_ptag_t ptag) 
 {
-    u_int32_t n, h;
+    uint32_t n, h;
     libnet_pblock_t *p;
     struct libnet_icmpv4_hdr icmp_hdr;
 
@@ -105,27 +107,14 @@ libnet_t *l, libnet_ptag_t ptag)
     icmp_hdr.icmp_id   = htons(id);            /* packet id */
     icmp_hdr.icmp_seq  = htons(seq);           /* packet seq */
 
-    n = libnet_pblock_append(l, p, (u_int8_t *)&icmp_hdr, LIBNET_ICMPV4_ECHO_H);
+    n = libnet_pblock_append(l, p, (uint8_t *)&icmp_hdr, LIBNET_ICMPV4_ECHO_H);
     if (n == -1)
     {
         goto bad;
     }
 
-    if ((payload && !payload_s) || (!payload && payload_s))
-    {
-         snprintf(l->err_buf, LIBNET_ERRBUF_SIZE,
-                 "%s(): payload inconsistency\n", __func__);
-        goto bad;
-    }
- 
-    if (payload && payload_s)
-    {
-        n = libnet_pblock_append(l, p, payload, payload_s);
-        if (n == -1)
-        {
-            goto bad;
-        }
-    }
+    /* boilerplate payload sanity check / append macro */
+    LIBNET_DO_PAYLOAD(l, p);
  
     if (sum == 0)
     {
@@ -144,11 +133,11 @@ bad:
 }
 
 libnet_ptag_t
-libnet_build_icmpv4_mask(u_int8_t type, u_int8_t code, u_int16_t sum,
-u_int16_t id, u_int16_t seq, u_int32_t mask, u_int8_t *payload,
-u_int32_t payload_s, libnet_t *l, libnet_ptag_t ptag)
+libnet_build_icmpv4_mask(uint8_t type, uint8_t code, uint16_t sum,
+uint16_t id, uint16_t seq, uint32_t mask, const uint8_t *payload,
+uint32_t payload_s, libnet_t *l, libnet_ptag_t ptag)
 {
-    u_int32_t n, h;
+    uint32_t n, h;
     libnet_pblock_t *p;
     struct libnet_icmpv4_hdr icmp_hdr;
 
@@ -178,27 +167,14 @@ u_int32_t payload_s, libnet_t *l, libnet_ptag_t ptag)
     icmp_hdr.icmp_seq  = htons(seq);    /* packet seq */
     icmp_hdr.icmp_mask = htonl(mask);   /* address mask */
 
-    n = libnet_pblock_append(l, p, (u_int8_t *)&icmp_hdr, LIBNET_ICMPV4_MASK_H);
+    n = libnet_pblock_append(l, p, (uint8_t *)&icmp_hdr, LIBNET_ICMPV4_MASK_H);
     if (n == -1)
     {
         goto bad;
     }
 
-    if ((payload && !payload_s) || (!payload && payload_s))
-    {
-         snprintf(l->err_buf, LIBNET_ERRBUF_SIZE,
-			     "%s(): payload inconsistency\n", __func__);
-        goto bad;
-    }
- 
-    if (payload && payload_s)
-    {
-        n = libnet_pblock_append(l, p, payload, payload_s);
-        if (n == -1)
-        {
-            goto bad;
-        }
-    }
+    /* boilerplate payload sanity check / append macro */
+    LIBNET_DO_PAYLOAD(l, p);
  
     if (sum == 0)
     {
@@ -217,11 +193,11 @@ bad:
 }
 
 libnet_ptag_t
-libnet_build_icmpv4_timestamp(u_int8_t type, u_int8_t code, u_int16_t sum,
-u_int16_t id, u_int16_t seq, n_time otime, n_time rtime, n_time ttime,
-u_int8_t *payload, u_int32_t payload_s, libnet_t *l, libnet_ptag_t ptag)
+libnet_build_icmpv4_timestamp(uint8_t type, uint8_t code, uint16_t sum,
+uint16_t id, uint16_t seq, uint32_t otime, uint32_t rtime, uint32_t ttime,
+const uint8_t *payload, uint32_t payload_s, libnet_t *l, libnet_ptag_t ptag)
 {
-    u_int32_t n, h;
+    uint32_t n, h;
     libnet_pblock_t *p;
     struct libnet_icmpv4_hdr icmp_hdr;
 
@@ -253,27 +229,14 @@ u_int8_t *payload, u_int32_t payload_s, libnet_t *l, libnet_ptag_t ptag)
     icmp_hdr.icmp_rtime = htonl(rtime);     /* receive timestamp */
     icmp_hdr.icmp_ttime = htonl(ttime);     /* transmit timestamp */
 
-    n = libnet_pblock_append(l, p, (u_int8_t *)&icmp_hdr, LIBNET_ICMPV4_TS_H);
+    n = libnet_pblock_append(l, p, (uint8_t *)&icmp_hdr, LIBNET_ICMPV4_TS_H);
     if (n == -1)
     {
         goto bad;
     }
 
-    if ((payload && !payload_s) || (!payload && payload_s))
-    {
-         snprintf(l->err_buf, LIBNET_ERRBUF_SIZE,
-			     "%s(): payload inconsistency\n", __func__);
-        goto bad;
-    }
- 
-    if (payload && payload_s)
-    {
-        n = libnet_pblock_append(l, p, payload, payload_s);
-        if (n == -1)
-        {
-            goto bad;
-        }
-    }
+    /* boilerplate payload sanity check / append macro */
+    LIBNET_DO_PAYLOAD(l, p);
  
     if (sum == 0)
     {
@@ -292,10 +255,10 @@ bad:
 }
 
 libnet_ptag_t
-libnet_build_icmpv4_unreach(u_int8_t type, u_int8_t code, u_int16_t sum,
-u_int8_t *payload, u_int32_t payload_s, libnet_t *l, libnet_ptag_t ptag)
+libnet_build_icmpv4_unreach(uint8_t type, uint8_t code, uint16_t sum,
+const uint8_t *payload, uint32_t payload_s, libnet_t *l, libnet_ptag_t ptag)
 {
-    u_int32_t n, h;
+    uint32_t n, h;
     libnet_pblock_t *p;
     struct libnet_icmpv4_hdr icmp_hdr;
 
@@ -339,10 +302,10 @@ bad:
 }
 
 libnet_ptag_t
-libnet_build_icmpv4_timeexceed(u_int8_t type, u_int8_t code, u_int16_t sum,
-u_int8_t *payload, u_int32_t payload_s, libnet_t *l, libnet_ptag_t ptag)
+libnet_build_icmpv4_timeexceed(uint8_t type, uint8_t code, uint16_t sum,
+const uint8_t *payload, uint32_t payload_s, libnet_t *l, libnet_ptag_t ptag)
 {
-    u_int32_t n, h;
+    uint32_t n, h;
     libnet_pblock_t *p;
     struct libnet_icmpv4_hdr icmp_hdr;
 
@@ -352,7 +315,7 @@ u_int8_t *payload, u_int32_t payload_s, libnet_t *l, libnet_ptag_t ptag)
     } 
 
     /* size of memory block */
-    n = LIBNET_ICMPV4_TIMXCEED_H;
+    n = LIBNET_ICMPV4_TIMXCEED_H + payload_s;
     /* 
      * FREDRAYNAL: as ICMP checksum includes what is embedded in 
      * the payload, and what is after the ICMP header, we need to include
@@ -387,12 +350,12 @@ bad:
 }
 
 libnet_ptag_t
-libnet_build_icmpv4_redirect(u_int8_t type, u_int8_t code, u_int16_t sum,
-u_int32_t gateway, u_int8_t *payload, u_int32_t payload_s, libnet_t *l,
+libnet_build_icmpv4_redirect(uint8_t type, uint8_t code, uint16_t sum,
+uint32_t gateway, const uint8_t *payload, uint32_t payload_s, libnet_t *l,
 libnet_ptag_t ptag)
 
 {
-    u_int32_t n, h;
+    uint32_t n, h;
     libnet_pblock_t *p;
     struct libnet_icmpv4_hdr icmp_hdr;
 
@@ -401,7 +364,7 @@ libnet_ptag_t ptag)
         return (-1);
     } 
 
-    n = LIBNET_ICMPV4_REDIRECT_H;               /* size of memory block */
+    n = LIBNET_ICMPV4_REDIRECT_H + payload_s;               /* size of memory block */
     /* 
      * FREDRAYNAL: as ICMP checksum includes what is embedded in 
      * the payload, and what is after the ICMP header, we need to include
@@ -434,4 +397,212 @@ bad:
     return (-1);
 }
 
-/* EOF */
+
+libnet_ptag_t
+libnet_build_icmpv6_common(
+        uint8_t type, uint8_t code, uint16_t sum,
+        const void* specific, uint32_t specific_s, uint8_t pblock_type,
+        uint8_t *payload, uint32_t payload_s,
+        libnet_t *l, libnet_ptag_t ptag
+        )
+{
+    uint32_t n;
+    libnet_pblock_t *p;
+    struct libnet_icmpv6_hdr icmp_hdr;
+
+    if (l == NULL)
+    { 
+        return (-1);
+    } 
+
+    n = LIBNET_ICMPV6_COMMON_H + specific_s + payload_s;
+
+    p = libnet_pblock_probe(l, ptag, n, pblock_type);
+
+    if (p == NULL)
+    {
+        return (-1);
+    }
+
+    memset(&icmp_hdr, 0, sizeof(icmp_hdr));
+    icmp_hdr.icmp_type = type;
+    icmp_hdr.icmp_code = code;
+    icmp_hdr.icmp_sum  = htons(sum);
+
+    if (libnet_pblock_append(l, p, (uint8_t *)&icmp_hdr, LIBNET_ICMPV6_COMMON_H) < 0)
+    {
+        goto bad;
+    }
+
+    if (libnet_pblock_append(l, p, specific, specific_s) < 0)
+    {
+        goto bad;
+    }
+
+    if (libnet_pblock_append(l, p, payload, payload_s) < 0)
+    {
+        goto bad;
+    }
+
+    if (sum == 0)
+    {
+        libnet_pblock_setflags(p, LIBNET_PBLOCK_DO_CHECKSUM);
+    }
+
+    return ptag ? ptag : libnet_pblock_update(l, p, 0, pblock_type);
+
+bad:
+    libnet_pblock_delete(l, p);
+
+    return -1;
+}
+
+libnet_ptag_t libnet_build_icmpv6(uint8_t type, uint8_t code, uint16_t sum,
+                                  uint8_t* payload, uint32_t payload_s,
+                                  libnet_t* l, libnet_ptag_t ptag)
+{
+    return libnet_build_icmpv6_common(
+            type, code, sum,
+            NULL, 0, LIBNET_PBLOCK_ICMPV6_UNREACH_H,
+            payload, payload_s,
+            l, ptag);
+}
+
+libnet_ptag_t
+libnet_build_icmpv6_unreach(
+        uint8_t type, uint8_t code, uint16_t sum,
+        uint8_t *payload, uint32_t payload_s,
+        libnet_t *l, libnet_ptag_t ptag
+        )
+{
+    struct libnet_icmpv6_unreach specific;
+
+    memset(&specific, 0, sizeof(specific));
+
+    return libnet_build_icmpv6_common(
+            type, code, sum,
+            &specific, sizeof(specific), LIBNET_PBLOCK_ICMPV6_UNREACH_H,
+            payload, payload_s,
+            l, ptag);
+}
+
+libnet_ptag_t
+libnet_build_icmpv6_echo(
+        uint8_t type, uint8_t code, uint16_t sum,
+        uint16_t id, uint16_t seq,
+        uint8_t *payload, uint32_t payload_s,
+        libnet_t *l, libnet_ptag_t ptag
+        )
+{
+    struct libnet_icmpv6_echo specific;
+
+    memset(&specific, 0, sizeof(specific));
+    specific.id = htons(id);
+    specific.seq = htons(seq);
+
+    return libnet_build_icmpv6_common(
+            type, code, sum,
+            &specific, sizeof(specific), LIBNET_PBLOCK_ICMPV6_ECHO_H,
+            payload, payload_s,
+            l, ptag);
+}
+
+
+libnet_ptag_t libnet_build_icmpv6_ndp_nsol(
+        uint8_t type, uint8_t code, uint16_t sum,
+        struct libnet_in6_addr target,
+        uint8_t *payload, uint32_t payload_s,
+        libnet_t* l, libnet_ptag_t ptag)
+{
+    struct libnet_icmpv6_ndp_nsol specific;
+
+    memset(&specific, 0, sizeof(specific));
+    specific.reserved = 0;
+    specific.target_addr = target;
+
+    return libnet_build_icmpv6_common(
+            type, code, sum,
+            &specific, sizeof(specific), LIBNET_PBLOCK_ICMPV6_NDP_NSOL_H,
+            payload, payload_s,
+            l, ptag);
+}
+
+
+libnet_ptag_t libnet_build_icmpv6_ndp_nadv(
+        uint8_t type, uint8_t code, uint16_t sum,
+        uint32_t flags, struct libnet_in6_addr target,
+        uint8_t *payload, uint32_t payload_s,
+        libnet_t* l, libnet_ptag_t ptag)
+{
+
+    struct libnet_icmpv6_ndp_nadv specific;
+
+    memset(&specific, 0, sizeof(specific));
+    specific.flags = htonl(flags);
+    specific.target_addr = target;
+
+    return libnet_build_icmpv6_common(
+            type, code, sum,
+            &specific, sizeof(specific), LIBNET_PBLOCK_ICMPV6_NDP_NADV_H,
+            payload, payload_s,
+            l, ptag);
+}
+
+libnet_ptag_t libnet_build_icmpv6_ndp_opt(
+        uint8_t type, uint8_t* option, uint32_t option_s,
+        libnet_t* l, libnet_ptag_t ptag)
+{
+    struct libnet_icmpv6_ndp_opt opt;
+    uint32_t n;
+    static uint8_t pad[8] = { 0 };
+    uint32_t pad_s = 0;
+    libnet_pblock_t* p;
+
+    if(l == NULL)
+        return -1;
+
+    if(!option)
+        option_s = 0;
+
+    /* options need to be padded to a multiple of 8-bytes, and opts.len is in units of 8-bytes */
+    n = sizeof(opt) + option_s;
+
+    if(n % 8)
+    {
+        n += 8 - (n % 8);
+    }
+
+    if(n > (0xff * 8))
+    {
+        return -1;
+    }
+
+    pad_s = n - option_s - sizeof(opt);
+
+    assert((n % 8) == 0);
+    assert(pad_s < sizeof(pad));
+
+    p = libnet_pblock_probe(l, ptag, n, LIBNET_PBLOCK_ICMPV6_NDP_OPT_H);
+    if(p == NULL)
+        return -1;
+
+    memset(&opt, 0, sizeof(opt));
+    opt.type = type;
+    opt.len  = n / 8;
+
+    if(libnet_pblock_append(l, p, &opt, sizeof(opt)) == -1)
+        goto bad;
+
+    if(libnet_pblock_append(l, p, option, option_s) == -1)
+        goto bad;
+
+    if(libnet_pblock_append(l, p, pad, pad_s) == -1)
+        goto bad;
+
+    return ptag ? ptag : libnet_pblock_update(l, p, n, LIBNET_PBLOCK_ICMPV6_NDP_OPT_H);
+
+bad:
+    libnet_pblock_delete(l, p);
+    return -1;
+}
+
