@@ -1,0 +1,18 @@
+source="libnet"
+version=1.1.6-pe-1
+
+bootstrap() {
+  autoreconf -iv
+}
+
+build() {
+  ./configure --prefix="${prefix}"
+  make
+}
+
+install() {
+  make DESTDIR="${dest_dir}" install
+
+  mkdir "${dest_dir}"/bin
+  command install -c libnet-config "${dest_dir}/${prefix}/bin/libnet-config"
+}
